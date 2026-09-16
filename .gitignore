@@ -1,0 +1,6 @@
+*.zst
+*.parquet
+.env
+__pycache__/
+target/
+.streamlit/secrets.toml
