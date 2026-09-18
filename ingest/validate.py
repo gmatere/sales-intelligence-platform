@@ -31,6 +31,16 @@ CHECKS = (
     ("distinct org", "SELECT count(DISTINCT org) FROM src"),
     ("records with CVEs", "SELECT count(*) FROM src WHERE n_cves > 0"),
     ("distinct CVEs", "SELECT count(DISTINCT c) FROM (SELECT unnest(cves) AS c FROM src)"),
+    ("records with a critical CVE (cvss>=9)", "SELECT count(*) FROM src WHERE n_cves_critical > 0"),
+    ("records with a VERIFIED CVE", "SELECT count(*) FROM src WHERE n_cves_verified > 0"),
+    (
+        "records with EPSS > 0.1  <-- actively exploited",
+        "SELECT count(*) FROM src WHERE max_epss > 0.1",
+    ),
+    (
+        "domains with EPSS > 0.1  <-- hottest prospects",
+        "SELECT count(DISTINCT primary_domain) FROM src WHERE max_epss > 0.1",
+    ),
     ("records with product", "SELECT count(*) FROM src WHERE product IS NOT NULL"),
     ("expired certs", "SELECT count(*) FROM src WHERE ssl_expired"),
     ("HAS security.txt  <-- maturity marker", "SELECT count(*) FROM src WHERE has_securitytxt"),

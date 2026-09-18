@@ -59,6 +59,15 @@ SCHEMA = pa.schema([
     ("tags", pa.list_(pa.string())),
     ("cves", pa.list_(pa.string())),
     ("n_cves", pa.int32()),
+    ("max_cvss", pa.float32()),
+    ("max_epss", pa.float32()),
+    ("n_cves_critical", pa.int32()),
+    ("n_cves_high", pa.int32()),
+    ("n_cves_verified", pa.int32()),
+    ("top_cve", pa.string()),
+    ("top_cve_cvss", pa.float32()),
+    ("top_cve_epss", pa.float32()),
+    ("top_cve_summary", pa.string()),
     ("cloud_provider", pa.string()),
     ("cloud_service", pa.string()),
     ("scan_module", pa.string()),
@@ -108,6 +117,53 @@ def present_services(record: dict) -> list[str]:
     return [key for key in SERVICE_KEYS if key in record]
 
 
+def summarise_vulns(vulns: dict) -> dict:
+    """Collapse a record's CVE dict into scoring inputs.
+
+    Kept as per-record aggregates rather than exploded to one row per CVE:
+    some hosts carry 100+ CVEs, and the scoring model only ever needs severity
+    bands plus the single most urgent finding. The full ID list survives in the
+    `cves` column if detail is needed later.
+
+    EPSS (exploitation probability in the next 30 days) drives `top_cve` rather
+    than CVSS, because a moderate-severity bug being actively exploited is a
+    more urgent sales conversation than a critical one nobody is attacking.
+    """
+    empty = {
+        "max_cvss": None, "max_epss": None, "n_cves_critical": 0,
+        "n_cves_high": 0, "n_cves_verified": 0, "top_cve": None,
+        "top_cve_cvss": None, "top_cve_epss": None, "top_cve_summary": None,
+    }
+    if not vulns:
+        return empty
+
+    scored = []
+    for cve_id, detail in vulns.items():
+        if not isinstance(detail, dict):
+            continue
+        scored.append((cve_id, detail.get("cvss"), detail.get("epss"),
+                       bool(detail.get("verified")), detail.get("summary")))
+
+    if not scored:
+        return empty
+
+    cvss_values = [c for _, c, _, _, _ in scored if c is not None]
+    epss_values = [e for _, _, e, _, _ in scored if e is not None]
+    worst = max(scored, key=lambda row: (row[2] or 0, row[1] or 0))
+
+    return {
+        "max_cvss": max(cvss_values) if cvss_values else None,
+        "max_epss": max(epss_values) if epss_values else None,
+        "n_cves_critical": sum(1 for _, c, _, _, _ in scored if (c or 0) >= 9.0),
+        "n_cves_high": sum(1 for _, c, _, _, _ in scored if 7.0 <= (c or 0) < 9.0),
+        "n_cves_verified": sum(1 for _, _, _, v, _ in scored if v),
+        "top_cve": worst[0],
+        "top_cve_cvss": worst[1],
+        "top_cve_epss": worst[2],
+        "top_cve_summary": worst[4],
+    }
+
+
 def heartbleed_verdict(opts: dict) -> str | None:
     """Trailing verdict token from Shodan's heartbleed probe.
 
@@ -129,10 +185,12 @@ def project(record: dict) -> dict:
     cert = ssl.get("cert") or {}
     cloud = record.get("cloud") or {}
     hostnames = record.get("hostnames") or []
-    cves = sorted((record.get("vulns") or {}).keys())
+    vulns = record.get("vulns") or {}
+    cves = sorted(vulns.keys())
     components = record.get("http", {}).get("components") or {}
 
     return {
+        **summarise_vulns(vulns),
         "ip": record.get("ip_str"),
         "port": record.get("port"),
         "transport": record.get("transport"),

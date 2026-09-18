@@ -64,6 +64,33 @@ quarter of the raw data never reaches the prospect list.
 
 ---
 
+## Vulnerability data
+
+**[risk] Every CVE finding is version-inferred, never confirmed.**
+Shodan attaches CVEs by matching the detected product version against known
+advisories — it does not test the host. Measured across 7,066 CVE entries in a
+5,690-record sample, `verified` is `false` for **100%** of them. So a host
+reporting 99 CVEs on Apache 2.4.41 may have every one of them backported and
+patched; the banner cannot tell us.
+
+Consequence: raw CVE counts are close to meaningless as a ranking signal, and
+any outreach that leads with "you have 99 vulnerabilities" is likely to be
+wrong and will lose the rep credibility on the first call.
+
+Mitigation: scoring leans on **EPSS** (exploitation probability in the next 30
+days) rather than CVE count or CVSS. EPSS is an externally published score
+about the vulnerability, not an inference about this host, so it survives the
+same uncertainty. Severity language in generated briefs is hedged to what the
+banner actually supports — the product and version are observed facts, the
+vulnerability is a possibility.
+
+**[gap] CVSS alone would have produced a misleading ranking.**
+Two sampled hosts both report max CVSS 9.8. One has a bug with EPSS 0.99999,
+the other 0.01225 — identical severity, completely different urgency. A
+CVSS-ordered list would have treated them as equivalent.
+
+---
+
 ## Transformation (dbt)
 
 _to be filled in as built_
