@@ -33,7 +33,21 @@ CHECKS = (
     ("distinct CVEs", "SELECT count(DISTINCT c) FROM (SELECT unnest(cves) AS c FROM src)"),
     ("records with product", "SELECT count(*) FROM src WHERE product IS NOT NULL"),
     ("expired certs", "SELECT count(*) FROM src WHERE ssl_expired"),
-    ("missing security.txt", "SELECT count(*) FROM src WHERE NOT has_securitytxt"),
+    ("HAS security.txt  <-- maturity marker", "SELECT count(*) FROM src WHERE has_securitytxt"),
+    ("records with a WAF", "SELECT count(*) FROM src WHERE http_waf IS NOT NULL"),
+    (
+        "domains with NO waf anywhere  <-- whitespace",
+        """SELECT count(*) FROM (
+             SELECT primary_domain FROM src WHERE primary_domain IS NOT NULL
+             GROUP BY 1 HAVING count(http_waf) = 0)""",
+    ),
+    ("heartbleed probed", "SELECT count(*) FROM src WHERE heartbleed IS NOT NULL"),
+    ("deprecated SHA-1 certs", "SELECT count(*) FROM src WHERE ssl_sig_alg ILIKE '%sha1%'"),
+    (
+        "extra domains from cert CN  <-- coverage lift",
+        """SELECT count(DISTINCT ssl_cert_cn) FROM src
+           WHERE primary_domain IS NULL AND ssl_cert_cn IS NOT NULL""",
+    ),
 )
 
 BREAKDOWNS = (
@@ -65,6 +79,25 @@ BREAKDOWNS = (
         "top 10 ports",
         """SELECT port, count(*) AS n FROM src
            GROUP BY port ORDER BY n DESC LIMIT 10""",
+    ),
+    (
+        "top 15 WAF vendors  <-- incumbent competitor signal",
+        """SELECT http_waf, count(*) AS n FROM src
+           WHERE http_waf IS NOT NULL
+           GROUP BY 1 ORDER BY n DESC LIMIT 15""",
+    ),
+    (
+        "top 15 detected technologies",
+        """SELECT c AS technology, count(*) AS n
+           FROM (SELECT unnest(http_components) AS c FROM src)
+           GROUP BY c ORDER BY n DESC LIMIT 15""",
+    ),
+    (
+        "scan modules flagging malware/RAT  <-- exclude these",
+        """SELECT scan_module, count(*) AS n FROM src
+           WHERE scan_module ILIKE '%rat%' OR scan_module ILIKE '%malware%'
+              OR scan_module ILIKE '%c2%' OR scan_module ILIKE '%botnet%'
+           GROUP BY 1 ORDER BY n DESC LIMIT 15""",
     ),
 )
 

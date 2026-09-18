@@ -48,6 +48,7 @@ SCHEMA = pa.schema([
     ("primary_domain", pa.string()),
     ("country_code", pa.string()),
     ("country_name", pa.string()),
+    ("region_code", pa.string()),
     ("city", pa.string()),
     ("product", pa.string()),
     ("version", pa.string()),
@@ -59,13 +60,22 @@ SCHEMA = pa.schema([
     ("cves", pa.list_(pa.string())),
     ("n_cves", pa.int32()),
     ("cloud_provider", pa.string()),
+    ("cloud_service", pa.string()),
+    ("scan_module", pa.string()),
     ("http_status", pa.int32()),
     ("http_title", pa.string()),
     ("http_server", pa.string()),
+    ("http_waf", pa.string()),
+    ("http_components", pa.list_(pa.string())),
     ("has_securitytxt", pa.bool_()),
     ("ssl_versions", pa.list_(pa.string())),
     ("ssl_issuer", pa.string()),
+    ("ssl_cert_cn", pa.string()),
+    ("ssl_sig_alg", pa.string()),
+    ("ssl_issued", pa.string()),
+    ("ssl_expires", pa.string()),
     ("ssl_expired", pa.bool_()),
+    ("heartbleed", pa.string()),
     ("services", pa.list_(pa.string())),
 ])
 
@@ -98,6 +108,19 @@ def present_services(record: dict) -> list[str]:
     return [key for key in SERVICE_KEYS if key in record]
 
 
+def heartbleed_verdict(opts: dict) -> str | None:
+    """Trailing verdict token from Shodan's heartbleed probe.
+
+    Raw form is '2026/09/14 09:59:55 23.4.47.75:443 - SAFE'. Only the verdict
+    carries meaning; the timestamp and address are already columns. Unlike
+    `vulns`, this is a tested result rather than a version inference.
+    """
+    raw = (opts.get("heartbleed") or "").strip()
+    if not raw:
+        return None
+    return raw.rsplit(" - ", 1)[-1].strip() or None
+
+
 def project(record: dict) -> dict:
     """Flatten one Shodan record down to the analysis columns."""
     location = record.get("location") or {}
@@ -107,6 +130,7 @@ def project(record: dict) -> dict:
     cloud = record.get("cloud") or {}
     hostnames = record.get("hostnames") or []
     cves = sorted((record.get("vulns") or {}).keys())
+    components = record.get("http", {}).get("components") or {}
 
     return {
         "ip": record.get("ip_str"),
@@ -121,6 +145,7 @@ def project(record: dict) -> dict:
         "primary_domain": primary_domain(hostnames),
         "country_code": location.get("country_code"),
         "country_name": location.get("country_name"),
+        "region_code": location.get("region_code"),
         "city": location.get("city"),
         "product": record.get("product"),
         "version": record.get("version"),
@@ -132,13 +157,22 @@ def project(record: dict) -> dict:
         "cves": cves,
         "n_cves": len(cves),
         "cloud_provider": cloud.get("provider"),
+        "cloud_service": cloud.get("service"),
+        "scan_module": (record.get("_shodan") or {}).get("module"),
         "http_status": http.get("status"),
         "http_title": http.get("title"),
         "http_server": http.get("server"),
+        "http_waf": http.get("waf"),
+        "http_components": sorted(components.keys()),
         "has_securitytxt": bool(http.get("securitytxt")),
         "ssl_versions": ssl.get("versions") or [],
         "ssl_issuer": (cert.get("issuer") or {}).get("O"),
+        "ssl_cert_cn": (cert.get("subject") or {}).get("CN"),
+        "ssl_sig_alg": cert.get("sig_alg"),
+        "ssl_issued": cert.get("issued"),
+        "ssl_expires": cert.get("expires"),
         "ssl_expired": bool(cert.get("expired")),
+        "heartbleed": heartbleed_verdict(record.get("opts") or {}),
         "services": present_services(record),
     }
 
@@ -165,9 +199,16 @@ class ShardWriter:
         if not self.rows:
             return
 
-        path = self.out_dir / f"part-{self.shard_index:05d}.parquet"
+        # Write under a temp name the resume glob ignores, then rename. Parquet
+        # writes its footer last, so a crash mid-write would otherwise leave a
+        # truncated file that resume counts as complete — silently skipping
+        # SHARD_SIZE records. Rename is atomic within a filesystem.
+        final = self.out_dir / f"part-{self.shard_index:05d}.parquet"
+        staging = self.out_dir / f".part-{self.shard_index:05d}.inflight"
+
         table = pa.Table.from_pylist(self.rows, schema=SCHEMA)
-        pq.write_table(table, path, compression="zstd")
+        pq.write_table(table, staging, compression="zstd")
+        staging.replace(final)
 
         self.rows = []
         self.shard_index += 1
