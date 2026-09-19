@@ -109,15 +109,23 @@ def fetch_queue(limit: int | None) -> list[dict]:
     return rows
 
 
-def already_done() -> set[str]:
+def already_done(version: str) -> set[str]:
+    """Entities already classified *by this prompt version*.
+
+    Keyed on version, not domain alone. Keying on domain would make a prompt
+    change unrunnable against entities the previous version had already seen —
+    which is precisely the comparison a versioned prompt exists to enable.
+    """
     if not RESULTS.exists():
         return set()
     done = set()
     for line in RESULTS.open(encoding="utf-8"):
         try:
-            done.add(json.loads(line)["entity_domain"])
-        except (json.JSONDecodeError, KeyError):
+            row = json.loads(line)
+        except json.JSONDecodeError:
             continue
+        if row.get("prompt_version") == version:
+            done.add(row.get("entity_domain"))
     return done
 
 
@@ -293,10 +301,10 @@ def run(args) -> None:
         estimate(rows, args.prompt_version)
         return
 
-    done = already_done()
+    done = already_done(args.prompt_version)
     pending = [r for r in rows if r["entity_domain"] not in done]
-    print(f"{len(rows):,} in queue, {len(done):,} already classified, "
-          f"{len(pending):,} to do")
+    print(f"{len(rows):,} in queue, {len(done):,} already classified on "
+          f"{args.prompt_version}, {len(pending):,} to do")
     if not pending:
         return
 
