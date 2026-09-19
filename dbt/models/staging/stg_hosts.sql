@@ -21,6 +21,12 @@ typed as (
         org,
         isp,
 
+        -- Raw anchors retained as evidence: they back the host-identifiability
+        -- test, provide a fallback identity for IPv6 hosts with no `ip`, and
+        -- give the LLM classification prompt something concrete to reason over.
+        hostnames,
+        domains,
+
         -- Entity anchors, kept separate. `primary_domain` comes from reverse
         -- DNS hostnames; `ssl_cert_cn` is an independent second source that
         -- recovers hosts with no PTR record. Coalescing is a downstream
