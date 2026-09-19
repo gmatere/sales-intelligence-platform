@@ -67,46 +67,67 @@ def example_entities() -> set[str]:
     return found
 
 
-def sample(conn, exclude: set[str], n: int) -> list[dict]:
-    """Stratified across estate size, weighted toward the boundary cases."""
-    blocked = ", ".join(f"'{d}'" for d in exclude) or "''"
+def draw(conn, where: str, limit: int) -> list[dict]:
+    """Random rows matching a predicate.
+
+    `ORDER BY random() LIMIT n` rather than `USING SAMPLE`: sampling clauses
+    interact badly with narrow predicates over a join and returned far fewer
+    rows than asked for, silently.
+    """
     cols = ", ".join(f"q.{c}" for c in EVIDENCE)
-
-    # Bands chosen so each contains a genuinely different kind of entity:
-    # single-host stubs, small businesses, the mid-market target, and estates
-    # large enough to be either an enterprise or a reseller.
-    # Qualified with q. — n_hosts exists in both joined relations.
-    bands = [("q.n_hosts = 1", n // 5), ("q.n_hosts BETWEEN 2 AND 10", n // 5),
-             ("q.n_hosts BETWEEN 11 AND 100", n // 5), ("q.n_hosts > 100", n // 5)]
-
-    rows = []
-    for predicate, count in bands:
-        rows += conn.sql(f"""
-            SELECT {cols}, c.sequential_name_ratio, c.rule_evidence
-            FROM llm_classification_queue q
-            JOIN int_entity_classification c USING (entity_domain)
-            WHERE {predicate} AND q.entity_domain NOT IN ({blocked})
-            USING SAMPLE {count} ROWS
-        """).df().to_dict("records")
-
-    # Near-misses: entities the hosting heuristic almost excluded. These decide
-    # the precision number, so they are over-represented on purpose.
-    rows += conn.sql(f"""
+    return conn.sql(f"""
         SELECT {cols}, c.sequential_name_ratio, c.rule_evidence
         FROM llm_classification_queue q
         JOIN int_entity_classification c USING (entity_domain)
-        WHERE c.sequential_name_ratio BETWEEN 0.4 AND 0.79
-          AND q.entity_domain NOT IN ({blocked})
-        USING SAMPLE {n - 4 * (n // 5)} ROWS
+        WHERE {where}
+        ORDER BY random()
+        LIMIT {limit}
     """).df().to_dict("records")
 
-    seen, unique = set(), []
-    for row in rows:
-        if row["entity_domain"] in seen:
-            continue
-        seen.add(row["entity_domain"])
-        unique.append(row)
-    return unique
+
+def sample(conn, exclude: set[str], n: int) -> list[dict]:
+    """Stratified across estate size, weighted toward the boundary cases.
+
+    Bands are a target, not a guarantee — after infrastructure exclusion some
+    are nearly empty. Shortfalls are topped up from the general pool and the
+    per-band counts are printed, because an eval set that quietly came back a
+    third of the requested size is worse than one that failed.
+    """
+    blocked = ", ".join(f"'{d}'" for d in exclude) or "''"
+    not_excluded = f"q.entity_domain NOT IN ({blocked})"
+    per_band = max(1, n // 5)
+
+    bands = [
+        ("single host", f"q.n_hosts = 1 AND {not_excluded}"),
+        ("2-10 hosts", f"q.n_hosts BETWEEN 2 AND 10 AND {not_excluded}"),
+        ("11-100 hosts", f"q.n_hosts BETWEEN 11 AND 100 AND {not_excluded}"),
+        ("over 100 hosts", f"q.n_hosts > 100 AND {not_excluded}"),
+        # Entities the hosting heuristic almost excluded. Over-represented on
+        # purpose: the boundary decides the precision number.
+        ("near-miss on hosting heuristic",
+         f"c.sequential_name_ratio BETWEEN 0.4 AND 0.79 AND {not_excluded}"),
+    ]
+
+    seen, picked = set(), []
+    for label, predicate in bands:
+        got = 0
+        for row in draw(conn, predicate, per_band):
+            if row["entity_domain"] in seen:
+                continue
+            seen.add(row["entity_domain"])
+            picked.append(row)
+            got += 1
+        print(f"  {label:<34} {got:>2} of {per_band}")
+
+    if len(picked) < n:
+        shortfall = n - len(picked)
+        blocked_now = ", ".join(f"'{d}'" for d in seen | exclude) or "''"
+        for row in draw(conn, f"q.entity_domain NOT IN ({blocked_now})", shortfall):
+            seen.add(row["entity_domain"])
+            picked.append(row)
+        print(f"  {'topped up from general pool':<34} {len(picked) - (n - shortfall):>2}")
+
+    return picked[:n]
 
 
 def to_record(row: dict) -> dict:
@@ -136,8 +157,13 @@ def main() -> None:
 
     exclude = example_entities()
     conn = duckdb.connect(WAREHOUSE, read_only=True)
+    print(f"sampling {n} entities:")
     rows = sample(conn, exclude, n)
     conn.close()
+
+    if len(rows) < n:
+        print(f"\nonly {len(rows)} available — the queue may be smaller than "
+              f"expected, or exclusions too broad")
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
     with OUT.open("w", encoding="utf-8") as sink:
