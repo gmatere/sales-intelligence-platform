@@ -165,6 +165,57 @@ reduction of ~740×, driven mostly by a WHERE clause.
 
 ---
 
+## D7b — Queue is ordered by fit, not intent
+
+**Decision.** `llm_classification_queue` sorts by `fit_score desc`, then intent.
+
+**Why.** Intent ordering was the first attempt and it was exactly backwards. A
+multi-tenant estate accumulates every finding belonging to every tenant, so
+sorting by urgency puts hosting providers at the front of the queue. Measured:
+a 25-entity test run from the intent-ordered queue returned **20
+`hosting_or_cloud`, 2 `isp_telco`, 2 `unknown`, and one real company**.
+
+Fit is the better proxy for "worth asking about" — its size band peaks at
+11–100 hosts and penalises estates above 500, which is the shape of a company
+rather than a provider.
+
+**Consequence.** Matters only because the budget is partial. If every entity
+were classified the order would be irrelevant; because only the top slice gets
+called, the sort key decides what the money buys.
+
+---
+
+## D12 — Cost estimates are worthless until validated against traces
+
+**Decision.** The dry-run estimator is corrected against measured traces, and
+reports whether caching will actually engage rather than assuming it.
+
+**Why.** The first estimate was wrong by 5.7×, in three compounding ways:
+
+| | Estimated | Measured | Cause |
+|---|---|---|---|
+| Input / call | 872 | 1,688 | tool schema uncounted; 4 chars/token too generous |
+| Output / call | 70 | 288 | no length constraint on the `reasoning` field |
+| Caching | engaged | **never** | system block below the model's minimum |
+| Full queue | $24 | **$136** | all three compounding |
+
+The caching failure is the one worth dwelling on. Anthropic's prompt cache has
+a minimum cacheable length — 2048 tokens for Haiku. The v1 system block was
+~1,118 tokens including the tool schema, so `cache_control` was **silently
+ignored**. No error, no warning. The only evidence was `cached_tokens: 0` in
+our own traces.
+
+**Consequence.** Three things follow. Per-call trace logging is not optional —
+it is the only place a silent pricing failure surfaces. Output tokens are
+billed at 5× input, so verbosity in a response schema is a cost decision, not a
+style one. And counter-intuitively, **making the system prompt longer makes the
+run cheaper**: crossing the cache floor moves ~2,200 tokens from $1.00/M to
+$0.10/M, which more than pays for the extra length. The natural way to add
+those tokens is few-shot examples, which should improve accuracy at the same
+time — that is the v1→v2 change.
+
+---
+
 ## D8 — Fit and intent stay separate
 
 **Decision.** Two independent 0–100 scores rather than one blended ranking,

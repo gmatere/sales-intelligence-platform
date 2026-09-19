@@ -101,6 +101,26 @@ upstream — to be useless, and I would have found the one real bug faster by
 just running `dbt build`. Small, but a fair example of reaching for automation
 where the feedback loop was already fast enough.
 
+**The cost estimate was wrong by 5.7× and the traces are the only reason I
+know.** I wrote a dry-run estimator so the token budget would be a decision
+rather than a discovery, ran it, got $24 for the full queue, and felt good
+about it. Then I ran 25 real calls and the traces said $0.0031 each — $136
+extrapolated.
+
+Three errors, all in the same direction. The estimator ignored the tool schema,
+which is sent on every request. It used 4 chars per token against markdown that
+tokenises nearer 3.2. And it assumed 70 output tokens where the real figure was
+288, because I asked for a reasoning field without constraining its length.
+
+The third error is the interesting one: **prompt caching was never working.**
+Anthropic requires a minimum block length to cache — 2048 tokens for Haiku —
+and mine was 1,118. The `cache_control` marker is silently ignored below that.
+No error, no warning, no indication in the response beyond `cached_tokens: 0`
+in a field I only had because I'd built the trace schema before I needed it.
+
+That is the strongest argument I have for why per-call tracing is not optional
+scaffolding. A silent pricing failure has no other surface.
+
 **Sampling beat reasoning again.** Two random samples of 25 excluded entities
 each contained exactly one false positive, both government bodies, both scoring
 0.62–0.64 on the hosting heuristic while every real ISP sat at 0.79–1.00. I

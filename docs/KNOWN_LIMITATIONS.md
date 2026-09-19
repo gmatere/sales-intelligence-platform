@@ -197,7 +197,41 @@ country list is retained alongside it so territory filtering can use either.
 
 ## LLM layer
 
-_to be filled in as built_
+**[fixed] Prompt caching silently did not work.**
+`cache_control` on the system block was ignored because the block was ~1,118
+tokens including the tool schema, below the 2048-token minimum for Haiku. No
+error is raised for this. Every call paid full input rate and `cached_tokens`
+was 0 across 25 traced calls. Only visible because the trace schema records
+cached tokens per call.
+
+**[fixed] Cost estimator understated by 5.7×.**
+It omitted the tool schema (sent on every request), used 4 chars/token against
+markdown that tokenises nearer 3.2, and assumed 70 output tokens against a
+measured 288. Corrected against real traces and now reports whether the
+cacheable block clears the model's floor.
+
+**[trade-off] Output verbosity is a deliberate cost.**
+Output is billed at 5× input, and the `reasoning` field was the largest single
+line in the bill before being constrained to 20 words. Keeping it at all costs
+roughly 35% more than returning a bare label — paid for auditability, since it
+is what makes a classification reviewable against the labelled set.
+
+**[gap] Only part of the queue is classified.**
+43,577 entities qualify; the budget covers a fraction. The queue is ordered by
+fit so a partial run covers the entities most likely to be real companies, but
+everything below the cut stays `U - unclassified` and never reaches a rep.
+Production would run the full queue on a batch endpoint overnight.
+
+**[risk] Classification quality is unmeasured at time of writing.**
+Precision on `end_customer_company` is the metric that matters — a false
+positive puts a hosting provider in a call list — and it is not yet known. The
+eval harness and labelled set exist to answer this; any number quoted before
+they run is a guess.
+
+**[gap] No human-review queue is wired up.**
+Low-confidence classifications are recorded with their confidence score but
+there is no interface for a human to adjudicate them. The data supports it; the
+workflow does not exist.
 
 ---
 
