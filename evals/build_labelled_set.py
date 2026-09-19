@@ -75,8 +75,9 @@ def sample(conn, exclude: set[str], n: int) -> list[dict]:
     # Bands chosen so each contains a genuinely different kind of entity:
     # single-host stubs, small businesses, the mid-market target, and estates
     # large enough to be either an enterprise or a reseller.
-    bands = [("n_hosts = 1", n // 5), ("n_hosts BETWEEN 2 AND 10", n // 5),
-             ("n_hosts BETWEEN 11 AND 100", n // 5), ("n_hosts > 100", n // 5)]
+    # Qualified with q. — n_hosts exists in both joined relations.
+    bands = [("q.n_hosts = 1", n // 5), ("q.n_hosts BETWEEN 2 AND 10", n // 5),
+             ("q.n_hosts BETWEEN 11 AND 100", n // 5), ("q.n_hosts > 100", n // 5)]
 
     rows = []
     for predicate, count in bands:
