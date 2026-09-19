@@ -56,6 +56,31 @@ Cast happens in dbt staging so ingest stays a pure projection. Cost: no
 time-based pruning at the Parquet layer. Irrelevant for a single snapshot,
 wrong for an incremental feed.
 
+**[gap] IPv6-only hosts carry no address.**
+Shodan populates `ipv6` and leaves `ip_str` null for IPv6-only services —
+106,419 records, 1.19% of the source. `ipv6` is not projected, so these hosts
+have a null `ip`.
+
+Measured impact rather than assumed: **81,945 of them (77%) have no entity
+anchor at all** and are already dropped by `int_entity_hosts`, so they cost
+nothing. The remaining **24,383 attribute to 3,570 entities** — 1.6% of
+228,570 — and contribute every signal normally, because entity resolution keys
+on hostnames rather than addresses.
+
+The residual cost is that `count(distinct ip)` would drop those hosts and
+understate the estate for those 3,570 entities, which feeds the ICP size band.
+Mitigated by falling back to the first hostname in the distinct count. The app
+still cannot display an address for them.
+
+A fifth re-ingest to capture `ipv6` was considered and rejected: 40 minutes of
+wall clock to recover a display field for 1.6% of entities, against a fixed
+deadline.
+
+Found by a `not_null` test that was itself wrong — it asserted a property the
+source does not have. Replaced with `assert_hosts_are_identifiable`, which
+tests the weaker claim that actually matters: every host must have an address
+*or* a name, or it can be neither attributed nor shown to a rep.
+
 **[gap] ~26% of records have no resolvable domain.**
 They are excluded from entity grouping rather than attributed by IP or ASN.
 Returning `NULL` instead of inventing a fallback is deliberate — a wrong

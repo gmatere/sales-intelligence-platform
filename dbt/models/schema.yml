@@ -8,8 +8,11 @@ models:
       re-read when scoring rules change.
     columns:
       - name: ip
-        description: Dotted-quad address as scanned.
-        tests: [not_null]
+        description: >
+          IPv4 dotted-quad. Null for IPv6-only hosts (~1.2% of records), where
+          Shodan populates `ipv6` instead — a field this projection does not
+          carry. Not tested for null: see assert_hosts_are_identifiable, which
+          asserts the property that actually matters.
       - name: port
         tests: [not_null]
       - name: transport

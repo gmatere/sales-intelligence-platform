@@ -17,7 +17,13 @@ aggregated as (
         -- Footprint. Host count is the only size proxy available, and it
         -- doubles as the ICP size band downstream.
         count(*)                                          as n_services,
-        count(distinct ip)                                as n_hosts,
+
+        -- IPv6-only hosts have a null `ip` (Shodan populates `ipv6`, which is
+        -- not projected), so a plain count(distinct ip) drops them and
+        -- understates the estate for ~1.6% of entities. Falling back to the
+        -- first hostname keeps multi-port IPv6 hosts collapsed to one host
+        -- rather than counting each service separately.
+        count(distinct coalesce(ip, hostnames[1]))        as n_hosts,
         count(distinct port)                              as n_ports,
         count(distinct product)                           as n_products,
         count(distinct country_code)                      as n_countries,
