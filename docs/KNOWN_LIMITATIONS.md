@@ -93,7 +93,54 @@ CVSS-ordered list would have treated them as equivalent.
 
 ## Transformation (dbt)
 
-_to be filled in as built_
+**[gap] Scoring weights are hand-tuned, not fitted.**
+Every component weight in `company_scores` is a judgement call. There is no
+conversion data to fit against — no record of which accounts actually bought —
+so the weights encode a plausible theory of urgency, not a measured one. The
+components are kept as separate columns specifically so they can be re-weighted
+against real outcomes once any exist, and so a rep can disagree with a ranking
+by looking at what drove it.
+
+**[risk] Host count is a weak size proxy.**
+It is the only size signal available, and it distorts in both directions: a
+real company on shared hosting exposes one host and looks tiny, while a company
+using many subdomains looks large. The ICP size bands inherit that error
+directly. Firmographic data (headcount, revenue) would replace it.
+
+**[risk] Certificate-derived entity keys can attribute to the wrong company.**
+`int_entity_hosts` falls back to the certificate CN when there is no reverse
+DNS record. A certificate can legitimately be issued for a domain hosted
+elsewhere, so a cert-anchored host may belong to a different company than the
+one the domain names. `entity_source` is carried through the whole pipeline so
+these can be identified, filtered, or weighted down — but they are currently
+treated the same as hostname-anchored records.
+
+**[trade-off] The infrastructure volume heuristic thresholds are arbitrary.**
+`cloud_host_ratio >= 0.9 and n_hosts >= 50` catches providers absent from the
+seed list. Both numbers were chosen by inspection, not tuned. Too loose and
+real multi-cloud companies get classified as infrastructure; too tight and
+providers leak into the prospect list. The LLM tier exists partly to absorb
+this imprecision.
+
+**[gap] The seed provider list is manually curated and will go stale.**
+~70 patterns covering the providers visible in this snapshot. New hosting
+companies appear constantly, and nothing refreshes the list. In production this
+would be derived from ASN ownership data rather than string matching.
+
+**[risk] WAF posture is classified by regex over vendor strings.**
+Distinguishing an incumbent security vendor from a CDN-bundled WAF drives the
+whitespace score, and it is done with a pattern match over Shodan's vendor
+label. A new vendor name, or a rename, silently falls through to `cdn_basic`
+and overstates the opportunity.
+
+**[gap] No cross-domain company resolution.**
+`acme.com` and `acme.co.uk` are treated as two companies. Merging them needs
+either firmographic data or an embedding-based match that is out of scope here,
+so multinational estates are fragmented across several entities.
+
+**[trade-off] `primary_country` uses the modal value.**
+For a genuinely multinational estate the mode is close to arbitrary. The full
+country list is retained alongside it so territory filtering can use either.
 
 ---
 

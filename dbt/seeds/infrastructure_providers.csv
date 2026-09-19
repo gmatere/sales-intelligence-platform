@@ -1,0 +1,68 @@
+pattern,provider,provider_class
+google,Google Cloud,cloud
+incapsula,Imperva Incapsula,cdn
+imperva,Imperva,security_vendor
+cloudflare,Cloudflare,cdn
+amazon,Amazon Web Services,cloud
+aws,Amazon Web Services,cloud
+aliyun,Alibaba Cloud,cloud
+alibaba,Alibaba Cloud,cloud
+akamai,Akamai,cdn
+microsoft,Microsoft Azure,cloud
+azure,Microsoft Azure,cloud
+zscaler,Zscaler,security_vendor
+oracle public cloud,Oracle Cloud,cloud
+digitalocean,DigitalOcean,hosting
+linode,Linode,hosting
+ovh,OVH,hosting
+hetzner,Hetzner,hosting
+contabo,Contabo,hosting
+vultr,Vultr,hosting
+scaleway,Scaleway,hosting
+leaseweb,Leaseweb,hosting
+ionos,IONOS,hosting
+rackspace,Rackspace,hosting
+equinix,Equinix,hosting
+tencent,Tencent Cloud,cloud
+huawei,Huawei Cloud,cloud
+baidu,Baidu Cloud,cloud
+fastly,Fastly,cdn
+stackpath,StackPath,cdn
+sucuri,Sucuri,security_vendor
+radware,Radware,security_vendor
+fortinet,Fortinet,security_vendor
+hostinger,Hostinger,hosting
+godaddy,GoDaddy,hosting
+namecheap,Namecheap,hosting
+squarespace,Squarespace,hosting
+wix,Wix,hosting
+shopify,Shopify,hosting
+vercel,Vercel,hosting
+netlify,Netlify,hosting
+heroku,Heroku,hosting
+fly io,Fly.io,hosting
+railway,Railway,hosting
+render,Render,hosting
+bitly,Bitly,other
+automattic,Automattic,hosting
+wordpress,WordPress.com,hosting
+gitlab,GitLab,other
+github,GitHub,other
+korea telecom,Korea Telecom,isp
+chinanet,ChinaNet,isp
+china telecom,China Telecom,isp
+china unicom,China Unicom,isp
+china mobile,China Mobile,isp
+comcast,Comcast,isp
+verizon,Verizon,isp
+at t,AT&T,isp
+deutsche telekom,Deutsche Telekom,isp
+telefonica,Telefonica,isp
+orange,Orange,isp
+vodafone,Vodafone,isp
+bharti airtel,Airtel,isp
+jio,Reliance Jio,isp
+telstra,Telstra,isp
+optus,Optus,isp
+singtel,Singtel,isp
+starhub,StarHub,isp

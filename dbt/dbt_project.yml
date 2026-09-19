@@ -1,0 +1,33 @@
+name: sales_intelligence
+version: "1.0.0"
+config-version: 2
+
+profile: sales_intelligence
+
+model-paths: ["models"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+target-path: "target"
+clean-targets: ["target", "dbt_packages"]
+
+vars:
+  # Path to the ingested Parquet shards. Override per environment:
+  #   dbt run --vars '{parquet_glob: "/root/parquet/part-*.parquet"}'
+  parquet_glob: "/root/parquet/part-*.parquet"
+
+  # Scoring thresholds, surfaced here so they are tunable without editing SQL
+  # and auditable in one place.
+  epss_urgent: 0.10        # exploitation probability that counts as "act now"
+  epss_critical: 0.50      # near-certain exploitation
+  cvss_critical: 9.0
+  cvss_high: 7.0
+  min_hosts_for_company: 1 # entities below this are dropped as noise
+
+models:
+  sales_intelligence:
+    staging:
+      +materialized: view
+    intermediate:
+      +materialized: table
+    marts:
+      +materialized: table

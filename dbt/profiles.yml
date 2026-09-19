@@ -1,0 +1,9 @@
+sales_intelligence:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: /root/warehouse.duckdb
+      threads: 2
+      extensions:
+        - parquet

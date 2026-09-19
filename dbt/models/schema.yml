@@ -1,0 +1,123 @@
+version: 2
+
+models:
+  - name: stg_hosts
+    description: >
+      One row per exposed service (ip + port). Cast and normalise only — no
+      filtering or business logic, so the 8.9M-row Parquet source is never
+      re-read when scoring rules change.
+    columns:
+      - name: ip
+        description: Dotted-quad address as scanned.
+        tests: [not_null]
+      - name: port
+        tests: [not_null]
+      - name: transport
+        tests:
+          - accepted_values:
+              values: ["tcp", "udp"]
+      - name: supports_deprecated_tls
+        description: >
+          True when the server accepts TLS 1.0 or 1.1. Shodan prefixes
+          unsupported protocols with '-', so this matches bare tokens; a
+          substring match would invert the meaning.
+        tests: [not_null]
+      - name: is_honeypot
+        tests: [not_null]
+      - name: is_malicious_infra
+        tests: [not_null]
+      - name: org_normalised
+        description: >
+          Lowercased, punctuation-stripped, legal-suffix-stripped org name.
+          Exists because the source carries one company under several
+          spellings, so exact matching misses millions of records.
+
+  - name: int_entity_hosts
+    description: >
+      Hosts with an entity key attached and unsellable records removed
+      (honeypots, attacker infrastructure).
+    columns:
+      - name: entity_domain
+        tests: [not_null]
+      - name: entity_source
+        description: Which anchor produced the key; certificate is weaker provenance.
+        tests:
+          - not_null
+          - accepted_values:
+              values: ["hostname", "certificate"]
+
+  - name: int_entity_classification
+    description: >
+      Rule-based pass at company-vs-infrastructure. Resolves the obvious cases
+      for free and marks the rest `unresolved` for the LLM tier.
+    columns:
+      - name: entity_domain
+        tests: [unique, not_null]
+      - name: rule_class
+        tests:
+          - not_null
+          - accepted_values:
+              values: ["infrastructure", "likely_infrastructure", "unresolved"]
+      - name: rule_evidence
+        description: Which rule fired, so a classification can be audited.
+
+  - name: company_signals
+    description: >
+      One row per entity with every observable finding aggregated. Deliberately
+      unscored so weights can be retuned without recomputing signals.
+    columns:
+      - name: entity_domain
+        tests: [unique, not_null]
+      - name: n_hosts
+        tests: [not_null]
+      - name: no_waf_anywhere
+        description: >
+          No WAF on any host in the estate — whitespace, with no incumbent
+          perimeter vendor to displace.
+        tests: [not_null]
+      - name: headline_cve
+        description: >
+          Most urgent finding, chosen by EPSS rather than CVSS. A moderate bug
+          under active exploitation outranks a critical one nobody is attacking.
+
+  - name: company_scores
+    description: >
+      Fit and intent as separate scores, with every contributing component
+      retained as its own column so a rep can see why an account ranked.
+    columns:
+      - name: entity_domain
+        tests: [unique, not_null]
+      - name: fit_score
+        tests: [not_null]
+      - name: intent_score
+        tests: [not_null]
+      - name: tier
+        tests:
+          - not_null
+          - accepted_values:
+              values:
+                - "A - call now"
+                - "B - nurture"
+                - "C - opportunistic"
+                - "D - deprioritise"
+                - "X - not a prospect"
+
+  - name: llm_classification_queue
+    description: >
+      Entities requiring a model call. Rules removed the known providers; the
+      signal filter removed entities with nothing to sell. Ordered by value so
+      a partial token budget still covers the part worth classifying.
+    columns:
+      - name: entity_domain
+        tests: [unique, not_null]
+
+seeds:
+  - name: infrastructure_providers
+    description: Known cloud, CDN, hosting, ISP and security vendors.
+    columns:
+      - name: pattern
+        tests: [unique, not_null]
+      - name: provider_class
+        tests:
+          - accepted_values:
+              values: ["cloud", "cdn", "hosting", "isp", "security_vendor", "other"]
