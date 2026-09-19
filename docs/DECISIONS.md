@@ -260,6 +260,61 @@ it would have saved on the volume actually being run.
 
 ---
 
+## D12c — Sonnet 5 over Haiku 4.5, chosen on quality because cost is a wash
+
+**Decision.** v3 runs on Sonnet 5. Caching works there; it does not on Haiku
+4.5, and the resulting costs are indistinguishable.
+
+**The Haiku caching investigation.** Three attempts, each based on a wrong
+number, each failing silently:
+
+| Attempt | Block | Believed floor | Result |
+|---|---:|---:|---|
+| v1 | 1,118 | 2,048 | rejected |
+| v2 | 2,313 | 2,048 | rejected — real floor is 4,096 |
+| v3 | ~4,283 | 4,096 | **still rejected**, above the documented minimum |
+
+Verified with three sequential identical requests:
+`cache_creation_input_tokens: 0` on all three, full 4,380 tokens billed as
+fresh input each time. Not a concurrency artifact and not a silent invalidator
+— the prefix was byte-identical, evidenced by an identical token count on every
+call.
+
+The same prompt and the same code cache correctly on Sonnet 5 first time:
+write 5,541, then reads of 5,541, input dropping to 347. So the implementation
+was never wrong. Haiku 4.5 refused a block above its documented minimum, and
+the investigation was stopped there rather than pursued further.
+
+**Cost, measured:**
+
+```
+Haiku v2, uncached    2,731 in x$1  + 136 out x$5              = $0.00341
+Sonnet v3, cached     5,541 read x$0.20 + 347 in x$2
+                                       + 165 out x$10          = $0.00345
+```
+
+Caching on Sonnet exactly offsets Sonnet's higher token price. ~$27 per 8,000
+entities either way.
+
+**So the model choice is made on quality.** Sonnet is the stronger model, and
+this task is a classification that is really a judgement — separating a
+consultancy from a reseller means weighing contradictory evidence, not matching
+a pattern. That is a deliberate deviation from the "cheap model for
+classification" default, and the eval measures whether it was right rather than
+leaving it as an assertion.
+
+**Tokenisers differ per model.** Sonnet counts this prompt as 5,541 tokens
+where Haiku counted ~4,283 — 30% more for identical text. Any chars-per-token
+estimate is model-specific; trace data is authoritative and the dry-run
+estimator should be read as a lower bound.
+
+**Time cost of this investigation was disproportionate.** The decision moved
+~$4 on the volume actually being run. It is recorded because the *method* —
+instrument, measure, isolate with a minimal reproduction, stop when the answer
+is economically irrelevant — is the transferable part, not the answer.
+
+---
+
 ## D8 — Fit and intent stay separate
 
 **Decision.** Two independent 0–100 scores rather than one blended ranking,

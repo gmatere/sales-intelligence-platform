@@ -1,16 +1,28 @@
 ---
 version: v3
 task: entity_classification
-model: claude-haiku-4-5
+model: claude-sonnet-5
 created: 2026-09-19
 supersedes: v2
 changes: >
-  Expands the worked-example set from seven to thirteen, adds regional naming
-  conventions and conflicting-evidence guidance. Takes the cacheable block past
-  Haiku 4.5's 4096-token minimum, so prompt caching engages — projected
-  $0.00340 to $0.00125 per call, a 2.7x reduction. The added content is chosen
-  to improve accuracy on the boundaries v1 and v2 got wrong, not merely to
-  clear the threshold; whether it does is what the eval measures.
+  Expands the worked-example set from seven to sixteen, adds regional naming
+  conventions, conflicting-evidence resolution order, and guidance on reading
+  the input fields — notably cloud_host_ratio, which a cloud-native company and
+  a reseller both score 1.00 on. Whether the added guidance improves accuracy
+  is what the eval measures.
+model_note: >
+  Runs on Sonnet 5 rather than Haiku 4.5. This prompt was originally grown to
+  clear Haiku's 4096-token cache minimum, and it did — measured block ~4,283 —
+  yet caching was still refused on every call, verified with three sequential
+  identical requests. The same prompt and the same code cache correctly on
+  Sonnet 5 on the first attempt (write 5,541, then reads of 5,541).
+  Cost is a wash: Sonnet's cache reads offset its higher token price, landing
+  at ~$0.00345/call against Haiku v2's ~$0.00341 uncached. The model choice is
+  therefore made on quality, not price. See docs/DECISIONS.md D12c.
+tokeniser_note: >
+  Sonnet counts this prompt as 5,541 tokens where Haiku counted ~4,283 — about
+  30% more for identical text. Token estimates are model-specific; trace data
+  is authoritative and the dry-run estimator is a lower bound.
 eval_leakage_note: >
   Every entity named in the worked examples must be excluded from the labelled
   eval set. Measuring a prompt on examples it was handed is not a measurement.
