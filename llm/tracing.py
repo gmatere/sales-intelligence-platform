@@ -68,6 +68,10 @@ class TraceRecord:
     input_tokens: int
     output_tokens: int
     cached_tokens: int
+    # Cache writes and cache reads are different events with different prices.
+    # Recording only reads makes "the cache never engaged" indistinguishable
+    # from "written every call, never read" — which are different bugs.
+    cache_write_tokens: int
     cost_usd: float
     latency_ms: int
     attempt: int
