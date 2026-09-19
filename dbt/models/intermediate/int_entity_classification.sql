@@ -24,7 +24,11 @@ with entity_agg as (
         -- is cheap; doing it per host would be 6.5M x 70.
         coalesce(string_agg(distinct org_normalised, ' | '), '') as orgs_seen,
 
+        count(distinct port)                              as n_ports,
+
         avg(case when is_cloud_or_cdn then 1.0 else 0.0 end)     as cloud_host_ratio,
+        avg(case when sequential_hostname then 1.0 else 0.0 end) as sequential_name_ratio,
+        max(case when is_reverse_dns_zone then 1 else 0 end)     as is_reverse_dns_zone,
         max(case when entity_source = 'hostname' then 1 else 0 end) as has_hostname_anchor
 
     from {{ ref('int_entity_hosts') }}
@@ -52,29 +56,51 @@ select
     a.n_hosts,
     a.n_ips,
     a.n_asns,
+    a.n_ports,
     a.orgs_seen,
     a.cloud_host_ratio,
+    a.sequential_name_ratio,
+    a.is_reverse_dns_zone,
     a.has_hostname_anchor,
     m.matched_provider,
     m.matched_provider_class,
 
     case
+        -- Addressing infrastructure. Certain, not a heuristic.
+        when a.is_reverse_dns_zone = 1 then 'infrastructure'
+
         -- Named in the seed list: settled, no model call needed.
         when m.matched_provider_class is not null then 'infrastructure'
 
-        -- Volume heuristic for providers absent from the seed list. An entity
-        -- with hundreds of hosts that are almost entirely cloud/CDN-tagged is
-        -- serving other people's traffic, not running its own estate.
+        -- Cloud/CDN-tagged at volume: serving other people's traffic.
         when a.cloud_host_ratio >= 0.9 and a.n_hosts >= 50 then 'likely_infrastructure'
 
-        -- The long tail: regional hosts, VPS resellers, small CDNs, and real
-        -- companies, indistinguishable by rule. This is the LLM's job.
+        -- Bare hosting providers carry no cloud/cdn tag, so the ratio above
+        -- misses them entirely — Beget, Forpsi, startdedicated and similar all
+        -- reached tier A on the first run. Two weak signals together catch the
+        -- shape: machines named sequentially (srv12., vps-104.) across an
+        -- estate large enough that the naming is systematic rather than
+        -- coincidental.
+        when a.sequential_name_ratio >= 0.6 and a.n_hosts >= 10
+            then 'likely_infrastructure'
+
+        -- Multi-tenant estates expose many unrelated services because their
+        -- tenants do. A single company with 20 hosts rarely runs 20 distinct
+        -- ports; a reseller hosting 20 customers usually does.
+        when a.n_hosts >= 20 and a.n_ports >= 20 then 'likely_infrastructure'
+
+        -- The remaining long tail is genuinely ambiguous by rule. Rules can
+        -- prove an entity IS infrastructure; they cannot prove it is not.
+        -- That asymmetry is what the LLM tier is for.
         else 'unresolved'
     end                                                    as rule_class,
 
     case
+        when a.is_reverse_dns_zone = 1 then 'reverse_dns_zone'
         when m.matched_provider_class is not null then 'seed_list'
-        when a.cloud_host_ratio >= 0.9 and a.n_hosts >= 50 then 'volume_heuristic'
+        when a.cloud_host_ratio >= 0.9 and a.n_hosts >= 50 then 'cloud_tag_volume'
+        when a.sequential_name_ratio >= 0.6 and a.n_hosts >= 10 then 'sequential_hostnames'
+        when a.n_hosts >= 20 and a.n_ports >= 20 then 'port_diversity'
         else null
     end                                                    as rule_evidence
 

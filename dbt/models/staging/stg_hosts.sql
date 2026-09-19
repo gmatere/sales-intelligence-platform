@@ -146,6 +146,21 @@ select
     len(list_intersect(services,
         ['hikvision', 'dahua_dvr_web']))                      as n_exposed_cameras,
 
-    http_waf is not null                                      as has_waf
+    http_waf is not null                                      as has_waf,
+
+    -- Multi-tenant hosting names its machines sequentially — srv12.host.net,
+    -- vps-104.provider.com, node3.dc.example. A single company's estate rarely
+    -- looks like this. Weak on its own, useful in aggregate.
+    coalesce(regexp_matches(
+        coalesce(hostnames[1], ''),
+        '^[a-z-]*[0-9]{1,4}[.-]'), false)                      as sequential_hostname,
+
+    -- Reverse-DNS zones are addressing infrastructure by definition. Never a
+    -- company, never a prospect, and cheap to exclude by rule.
+    coalesce(
+        primary_domain like '%.in-addr.arpa'
+        or primary_domain like '%.ip6.arpa'
+        or primary_domain in ('in-addr.arpa', 'ip6.arpa'), false)
+                                                              as is_reverse_dns_zone
 
 from typed

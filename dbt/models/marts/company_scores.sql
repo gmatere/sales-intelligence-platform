@@ -112,9 +112,17 @@ select
   + (case when n_deprecated_tls > 0 then 1 else 0 end)
   + (case when n_exposed_cameras > 0 then 1 else 0 end)  as n_signal_categories,
 
+    -- Tiering gates on classification status, not just scores.
+    --
+    -- The first run put hosting providers at the top of tier A because the
+    -- logic treated "rules found no evidence of infrastructure" as "confirmed
+    -- company". It is not: rules can prove an entity IS infrastructure, never
+    -- that it is not. Everything still unresolved sits in 'U' until the LLM
+    -- adjudicates, which is exactly the boundary the model call is paying for.
     case
         when rule_class in ('infrastructure', 'likely_infrastructure')
             then 'X - not a prospect'
+        when rule_class = 'unresolved'              then 'U - unclassified'
         when fit_score >= 50 and intent_score >= 50 then 'A - call now'
         when fit_score >= 50 and intent_score <  50 then 'B - nurture'
         when fit_score <  50 and intent_score >= 50 then 'C - opportunistic'

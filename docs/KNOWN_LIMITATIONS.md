@@ -140,6 +140,32 @@ one the domain names. `entity_source` is carried through the whole pipeline so
 these can be identified, filtered, or weighted down — but they are currently
 treated the same as hostname-anchored records.
 
+**[fixed] Tiering treated "unclassified" as "is a prospect".**
+The first build put hosting providers at the top of tier A — Beget, Forpsi,
+startdedicated, vps-10, hostsila, plus the reverse-DNS zone `64.in-addr.arpa`.
+All scored 90 fit and 100 intent, because a multi-tenant estate accumulates
+every finding belonging to everyone it hosts.
+
+The scores were correct; the inference from them was not. Rules can prove an
+entity **is** infrastructure — a seed match, a cloud tag, a reverse-DNS zone —
+but they cannot prove it **is not**. Absence of evidence was being read as
+evidence of absence, so anything the seed list had never heard of was promoted
+to a call-now prospect.
+
+Fixed by gating tiers on classification status: `unresolved` entities now land
+in `U - unclassified` and cannot reach A–D until the LLM adjudicates. That
+asymmetry is the clearest justification for the rule-vs-LLM split in the whole
+system, and it was found by reading twenty rows rather than by reasoning about
+the design.
+
+**[gap] The seed list will never catch the long tail, by construction.**
+Regional hosting providers are the single largest source of false prospects and
+there are thousands of them. Adding the ones visible in a 20-row sample would
+overfit to that sample without generalising, so two shape-based heuristics were
+added instead — sequential machine naming (`srv12.`, `vps-104.`) and port
+diversity disproportionate to estate size. Both are deliberately weak; the LLM
+tier absorbs what they miss.
+
 **[trade-off] The infrastructure volume heuristic thresholds are arbitrary.**
 `cloud_host_ratio >= 0.9 and n_hosts >= 50` catches providers absent from the
 seed list. Both numbers were chosen by inspection, not tuned. Too loose and

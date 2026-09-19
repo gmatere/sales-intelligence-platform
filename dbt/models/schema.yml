@@ -103,6 +103,7 @@ models:
                 - "B - nurture"
                 - "C - opportunistic"
                 - "D - deprioritise"
+                - "U - unclassified"
                 - "X - not a prospect"
 
   - name: llm_classification_queue
