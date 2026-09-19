@@ -68,7 +68,13 @@ TOOL = {
             "entity_class": {"type": "string", "enum": CLASSES},
             "canonical_name": {"type": "string"},
             "confidence": {"type": "number", "minimum": 0, "maximum": 1},
-            "reasoning": {"type": "string"},
+            # Measured at 288 output tokens per call without a length
+            # constraint — the model writes paragraphs. Output is billed at 5x
+            # input, so verbosity here was the single largest cost line.
+            "reasoning": {
+                "type": "string",
+                "description": "At most 20 words. Cite the deciding evidence only.",
+            },
         },
         "required": ["entity_class", "canonical_name", "confidence", "reasoning"],
     },
@@ -205,41 +211,80 @@ class Classifier:
                 "prompt_version": self.version, **parsed.model_dump()}
 
 
+# Below this, cache_control is silently ignored and the block is billed at the
+# full input rate. Discovered the hard way: the v1 system prompt was ~750
+# tokens, every call reported cached_tokens=0, and nothing warned about it.
+MIN_CACHEABLE_TOKENS = {"haiku": 2048, "sonnet": 1024, "opus": 1024}
+
+# Markdown with punctuation and structure tokenises closer to 3.2 chars/token
+# than the usual 4. The first estimator used 4 and came in 48% under.
+CHARS_PER_TOKEN = 3.2
+
+# Measured from real traces rather than assumed. The first estimate guessed 70
+# and the actual was 288 — the reasoning field writes paragraphs unless the
+# schema constrains it.
+ASSUMED_OUTPUT_TOKENS = 290
+
+
+def _cache_floor(model: str) -> int:
+    for family, floor in MIN_CACHEABLE_TOKENS.items():
+        if family in model:
+            return floor
+    return 2048
+
+
 def estimate(rows: list[dict], version: str) -> None:
-    """Price the run without making a call. Uses a 4-chars-per-token
-    approximation, which is close enough to choose a budget from."""
+    """Price the run without making a call.
+
+    Counts the tool schema, which is sent on every request and which the first
+    version of this function ignored entirely, and reports whether the system
+    block actually clears the cache threshold for the chosen model.
+    """
     model, system, template = load_prompt(version)
-    sample = rows[:200] or []
+    sample = rows[:200]
     if not sample:
         print("queue is empty")
         return
 
-    avg_user = sum(len(render(template, r)) for r in sample) / len(sample) / 4
-    system_tokens = len(system) / 4
-    output_tokens = 70
+    avg_user = sum(len(render(template, r)) for r in sample) / len(sample) / CHARS_PER_TOKEN
+    system_tokens = len(system) / CHARS_PER_TOKEN
+    tool_tokens = len(json.dumps(TOOL)) / CHARS_PER_TOKEN
+    cacheable_block = system_tokens + tool_tokens
+    floor = _cache_floor(model)
+    caching_works = cacheable_block >= floor
 
     n = len(rows)
-    # System block is cached after the first call, so it is charged at the
-    # cached rate for the remainder — which is where most of the saving is.
-    fresh_in = n * avg_user + system_tokens
-    cached_in = max(0, n - 1) * system_tokens
-    out = n * output_tokens
+    if caching_works:
+        # First call writes the cache at a premium; the rest read it cheaply.
+        usage = {
+            "cache_creation_input_tokens": cacheable_block,
+            "cache_read_input_tokens": max(0, n - 1) * cacheable_block,
+            "input_tokens": n * avg_user,
+            "output_tokens": n * ASSUMED_OUTPUT_TOKENS,
+        }
+    else:
+        usage = {
+            "input_tokens": n * (cacheable_block + avg_user),
+            "output_tokens": n * ASSUMED_OUTPUT_TOKENS,
+        }
 
-    usage = {"input_tokens": fresh_in, "cache_read_input_tokens": cached_in,
-             "output_tokens": out}
-    uncached = price_call({"input_tokens": fresh_in + cached_in,
-                           "output_tokens": out}, model)
+    cost = price_call(usage, model)
+    no_cache = price_call(
+        {"input_tokens": n * (cacheable_block + avg_user),
+         "output_tokens": n * ASSUMED_OUTPUT_TOKENS}, model)
 
-    print(f"prompt version : {version}")
-    print(f"model          : {model}")
-    print(f"entities       : {n:,}")
-    print(f"system tokens  : {system_tokens:,.0f} (cached after first call)")
-    print(f"user tokens    : {avg_user:,.0f} avg")
-    print(f"output tokens  : {output_tokens} assumed")
-    print(f"total input    : {fresh_in + cached_in:,.0f}")
-    print(f"total output   : {out:,.0f}")
-    print(f"cost, cached   : ${price_call(usage, model):,.2f}")
-    print(f"cost, uncached : ${uncached:,.2f}")
+    print(f"prompt version  : {version}")
+    print(f"model           : {model}")
+    print(f"entities        : {n:,}")
+    print(f"system tokens   : {system_tokens:,.0f}")
+    print(f"tool schema     : {tool_tokens:,.0f} (billed on every call)")
+    print(f"cacheable block : {cacheable_block:,.0f} vs {floor:,} floor -> "
+          f"{'CACHED' if caching_works else 'NOT CACHED, below minimum'}")
+    print(f"user tokens     : {avg_user:,.0f} avg")
+    print(f"output tokens   : {ASSUMED_OUTPUT_TOKENS} (measured from traces)")
+    print(f"cost            : ${cost:,.2f}")
+    print(f"cost if uncached: ${no_cache:,.2f}")
+    print(f"per call        : ${cost / n:.5f}")
 
 
 def run(args) -> None:

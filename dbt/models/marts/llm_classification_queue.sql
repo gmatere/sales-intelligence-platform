@@ -10,9 +10,18 @@
 --      is worthless. This is the larger of the two filters and the cheaper
 --      one — it is a boolean on an aggregate, not a model call.
 --
--- Ordering matters as well as filtering: the queue is sorted by potential
--- value, so a token budget that only covers part of it still covers the part
--- worth classifying.
+-- Ordering matters as well as filtering: a token budget that covers only part
+-- of the queue should cover the part worth classifying.
+--
+-- Ordered by fit, not intent. Intent ordering was the first attempt and it was
+-- backwards — a multi-tenant estate accumulates every finding belonging to
+-- every tenant, so sorting by urgency puts hosting providers at the front. A
+-- 25-entity test run classified 20 of them as hosting and exactly one as a
+-- real company.
+--
+-- Fit is the better proxy for "worth asking about": its size band peaks at
+-- 11-100 hosts and penalises estates above 500, which is the shape of a
+-- company rather than a provider.
 
 select
     entity_domain,
@@ -47,4 +56,4 @@ where rule_class = 'unresolved'
   and n_signal_categories >= 1
   and n_hosts >= {{ var('min_hosts_for_company') }}
 
-order by intent_score desc, fit_score desc
+order by fit_score desc, intent_score desc

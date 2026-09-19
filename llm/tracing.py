@@ -46,6 +46,11 @@ class TraceRecord:
     ts: float = field(default_factory=time.time)
 
 
+# Writing to the cache costs more than a plain input token; reading from it
+# costs far less. Omitting the write multiplier understates every estimate.
+CACHE_WRITE_MULTIPLIER = 1.25
+
+
 def price_call(usage: dict, model: str) -> float:
     """Cost in USD for one call. Unknown models price at zero rather than
     guessing — a silently wrong cost figure is worse than an obvious gap."""
@@ -53,13 +58,15 @@ def price_call(usage: dict, model: str) -> float:
     if not rates:
         return 0.0
 
+    fresh = usage.get("input_tokens", 0) or 0
     cached = usage.get("cache_read_input_tokens", 0) or 0
-    fresh = (usage.get("input_tokens", 0) or 0)
+    written = usage.get("cache_creation_input_tokens", 0) or 0
     output = usage.get("output_tokens", 0) or 0
 
     return (
         fresh * rates["input"] / 1_000_000
         + cached * rates["cached_input"] / 1_000_000
+        + written * rates["input"] * CACHE_WRITE_MULTIPLIER / 1_000_000
         + output * rates["output"] / 1_000_000
     )
 
