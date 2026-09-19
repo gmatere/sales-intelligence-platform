@@ -1,7 +1,7 @@
 ---
 version: v1
 task: entity_classification
-model: claude-haiku-4-5-20251001
+model: claude-haiku-4-5
 created: 2026-09-19
 purpose: >
   Decide whether an internet-exposed estate belongs to a company that could buy

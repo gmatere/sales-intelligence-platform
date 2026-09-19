@@ -216,6 +216,50 @@ time — that is the v1→v2 change.
 
 ---
 
+## D12b — Not padding the prompt to reach the cache threshold
+
+**Decision.** v2 ships without prompt caching. The remaining ~1,800 tokens
+needed to clear Haiku 4.5's floor were not added.
+
+**Why the floor was missed twice.** The minimum cacheable prefix is
+model-dependent and **not monotonic across generations**:
+
+| Model | Minimum |
+|---|---:|
+| Opus 5, Fable 5 | 512 |
+| Opus 4.8, Sonnet 5, Sonnet 4.6 | 1,024 |
+| Opus 4.7, Haiku 3.5 | 2,048 |
+| **Haiku 4.5**, Opus 4.6, Opus 4.5 | **4,096** |
+
+v1's block was 1,118 tokens. v2 was expanded to 2,308 on the assumption the
+floor was 2,048 — it is 4,096 for this model, so caching still did not engage.
+Both failures were silent: no error, no warning, only `cached_tokens: 0`.
+
+**The arithmetic, per call:**
+
+| Option | Cost/call | 43,577 entities |
+|---|---:|---:|
+| v2 as shipped, Haiku, no caching | $0.00340 | $148 |
+| v2 padded past 4,096, Haiku, cached | $0.00125 | $54 |
+| v2 as-is on Sonnet 5 (1,024 floor, caches) | $0.00214 | $93 |
+
+**Why not pad.** Adding 1,800 tokens of prompt to clear a threshold — rather
+than because the model needs the guidance — optimises the metric instead of the
+system. The prompt is already long for a classification task, and the marginal
+examples would be filler. Against a fixed deadline the hours are better spent
+on the eval harness, which is the only thing that can say whether v2 is *better*
+rather than merely cheaper.
+
+**What was kept.** The output cap, which was the larger win and cost nothing:
+288 → 136 tokens per call, latency roughly halved. Output is billed at 5×
+input, so response verbosity was always the bigger lever.
+
+**Recorded as an optimisation not taken**, with the numbers, because a
+documented decision with arithmetic behind it is worth more here than the $17
+it would have saved on the volume actually being run.
+
+---
+
 ## D8 — Fit and intent stay separate
 
 **Decision.** Two independent 0–100 scores rather than one blended ranking,

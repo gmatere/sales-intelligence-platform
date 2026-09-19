@@ -16,11 +16,42 @@ import time
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
-# Verify against current pricing before quoting these. USD per million tokens.
+# USD per million tokens. Keyed by family prefix rather than exact model ID:
+# an exact-match table returns 0.0 for an unrecognised ID, so renaming the model
+# in a prompt file would silently zero out every cost figure in the traces.
 PRICING = {
-    "claude-haiku-4-5-20251001": {"input": 1.00, "output": 5.00, "cached_input": 0.10},
-    "claude-sonnet-5": {"input": 3.00, "output": 15.00, "cached_input": 0.30},
+    "claude-haiku-4-5": {"input": 1.00, "output": 5.00, "cached_input": 0.10},
+    "claude-sonnet-5": {"input": 2.00, "output": 10.00, "cached_input": 0.20},
+    "claude-opus-5": {"input": 5.00, "output": 25.00, "cached_input": 0.50},
 }
+
+# Minimum cacheable prefix, per model. Below this, `cache_control` is ignored
+# with no error and no warning — the only evidence is cache tokens staying at
+# zero. Deliberately non-monotonic across generations: Haiku 4.5 requires 8x
+# what Opus 5 does.
+MIN_CACHEABLE_TOKENS = {
+    "claude-opus-5": 512,
+    "claude-fable-5": 512,
+    "claude-sonnet-5": 1024,
+    "claude-sonnet-4-6": 1024,
+    "claude-opus-4-7": 2048,
+    "claude-haiku-4-5": 4096,
+    "claude-opus-4-6": 4096,
+}
+
+
+def rates_for(model: str) -> dict | None:
+    for prefix, rates in PRICING.items():
+        if model.startswith(prefix):
+            return rates
+    return None
+
+
+def cache_floor(model: str) -> int:
+    for prefix, floor in MIN_CACHEABLE_TOKENS.items():
+        if model.startswith(prefix):
+            return floor
+    return 4096  # assume the strictest known floor rather than under-report
 
 
 @dataclass
@@ -54,7 +85,7 @@ CACHE_WRITE_MULTIPLIER = 1.25
 def price_call(usage: dict, model: str) -> float:
     """Cost in USD for one call. Unknown models price at zero rather than
     guessing — a silently wrong cost figure is worse than an obvious gap."""
-    rates = PRICING.get(model)
+    rates = rates_for(model)
     if not rates:
         return 0.0
 

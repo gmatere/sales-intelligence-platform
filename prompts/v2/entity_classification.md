@@ -1,16 +1,22 @@
 ---
 version: v2
 task: entity_classification
-model: claude-haiku-4-5-20251001
+model: claude-haiku-4-5
 created: 2026-09-19
 supersedes: v1
 changes: >
-  Adds six worked examples covering the decision boundaries v1 got wrong, an
-  explicit common-mistakes section, and a hard length limit on the reasoning
-  field. Together these take the cacheable block past the 2048-token minimum,
-  so prompt caching engages for the first time — v1 reported cached_tokens=0 on
-  every call because the block was ~1,118 tokens and cache_control was silently
-  ignored below the floor.
+  Adds seven worked examples covering the decision boundaries v1 got wrong, a
+  common-mistakes section, canonical-name guidance, and a hard length limit on
+  the reasoning field. Measured effect: output fell from 288 to 136 tokens per
+  call and latency roughly halved.
+caching_note: >
+  This prompt does NOT achieve caching, and the attempt to make it do so was
+  based on a wrong number. Haiku 4.5 requires a 4096-token cacheable prefix,
+  not the 2048 originally assumed — the minimum is non-monotonic across model
+  generations and Haiku 4.5 sits at the strictest end. The v2 block is ~2,308
+  tokens, so cache_control is still silently ignored. Padding a further ~1,800
+  tokens purely to clear a threshold was considered and rejected; see
+  docs/DECISIONS.md D12b for the arithmetic.
 eval_leakage_note: >
   The entities used as worked examples below must be excluded from the labelled
   eval set. Measuring a prompt on examples it was given is not a measurement.

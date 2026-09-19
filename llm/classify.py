@@ -28,7 +28,7 @@ import anthropic
 import duckdb
 from pydantic import BaseModel, Field, ValidationError
 
-from tracing import TraceRecord, TraceWriter, price_call, summarise
+from tracing import TraceRecord, TraceWriter, cache_floor, price_call, summarise
 
 REPO = Path(__file__).resolve().parent.parent
 WAREHOUSE = "/root/warehouse.duckdb"
@@ -91,7 +91,7 @@ def load_prompt(version: str) -> tuple[str, str, str]:
     text = path.read_text(encoding="utf-8")
 
     model_match = re.search(r"^model:\s*(\S+)", text, re.M)
-    model = model_match.group(1) if model_match else "claude-haiku-4-5-20251001"
+    model = model_match.group(1) if model_match else "claude-haiku-4-5"
 
     body = text.split("---", 2)[-1]
     system_part, user_part = body.split("# User", 1)
@@ -219,26 +219,14 @@ class Classifier:
                 "prompt_version": self.version, **parsed.model_dump()}
 
 
-# Below this, cache_control is silently ignored and the block is billed at the
-# full input rate. Discovered the hard way: the v1 system prompt was ~750
-# tokens, every call reported cached_tokens=0, and nothing warned about it.
-MIN_CACHEABLE_TOKENS = {"haiku": 2048, "sonnet": 1024, "opus": 1024}
-
 # Markdown with punctuation and structure tokenises closer to 3.2 chars/token
-# than the usual 4. The first estimator used 4 and came in 48% under.
+# than the usual 4, and even that under-reports: measured input on v2 was 2,730
+# against a 2,468 estimate. Treat estimates as lower bounds.
 CHARS_PER_TOKEN = 3.2
 
-# Measured from real traces rather than assumed. The first estimate guessed 70
-# and the actual was 288 — the reasoning field writes paragraphs unless the
-# schema constrains it.
-ASSUMED_OUTPUT_TOKENS = 290
-
-
-def _cache_floor(model: str) -> int:
-    for family, floor in MIN_CACHEABLE_TOKENS.items():
-        if family in model:
-            return floor
-    return 2048
+# Measured from v2 traces. v1 assumed 70, measured 288; capping the reasoning
+# field at 20 words brought it to 136.
+ASSUMED_OUTPUT_TOKENS = 140
 
 
 def estimate(rows: list[dict], version: str) -> None:
@@ -258,7 +246,7 @@ def estimate(rows: list[dict], version: str) -> None:
     system_tokens = len(system) / CHARS_PER_TOKEN
     tool_tokens = len(json.dumps(TOOL)) / CHARS_PER_TOKEN
     cacheable_block = system_tokens + tool_tokens
-    floor = _cache_floor(model)
+    floor = cache_floor(model)
     caching_works = cacheable_block >= floor
 
     n = len(rows)
