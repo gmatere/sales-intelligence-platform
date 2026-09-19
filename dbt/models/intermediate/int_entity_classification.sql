@@ -75,13 +75,17 @@ select
         -- Cloud/CDN-tagged at volume: serving other people's traffic.
         when a.cloud_host_ratio >= 0.9 and a.n_hosts >= 50 then 'likely_infrastructure'
 
-        -- Bare hosting providers carry no cloud/cdn tag, so the ratio above
-        -- misses them entirely — Beget, Forpsi, startdedicated and similar all
-        -- reached tier A on the first run. Two weak signals together catch the
-        -- shape: machines named sequentially (srv12., vps-104.) across an
-        -- estate large enough that the naming is systematic rather than
-        -- coincidental.
-        when a.sequential_name_ratio >= 0.6 and a.n_hosts >= 10
+        -- Sequential machine naming. In practice this catches ISP address
+        -- space more than hosting: customer-premises equipment named by
+        -- address (dsl-123-45.isp.net) produces near-total sequential naming.
+        --
+        -- Threshold raised 0.6 -> 0.8 after sampling. Unambiguous ISPs sit at
+        -- 0.87-1.0; the only two false positives in a 25-row sample were the
+        -- Italian foreign ministry (esteri.it) and a Belgian aviation firm,
+        -- both at exactly 0.64. A false exclusion is far more costly than an
+        -- extra model call — an excluded company never gets a second look,
+        -- whereas an extra classification costs a fraction of a cent.
+        when a.sequential_name_ratio >= 0.8 and a.n_hosts >= 10
             then 'likely_infrastructure'
 
         -- Multi-tenant estates expose many unrelated services because their
@@ -99,7 +103,7 @@ select
         when a.is_reverse_dns_zone = 1 then 'reverse_dns_zone'
         when m.matched_provider_class is not null then 'seed_list'
         when a.cloud_host_ratio >= 0.9 and a.n_hosts >= 50 then 'cloud_tag_volume'
-        when a.sequential_name_ratio >= 0.6 and a.n_hosts >= 10 then 'sequential_hostnames'
+        when a.sequential_name_ratio >= 0.8 and a.n_hosts >= 10 then 'sequential_hostnames'
         when a.n_hosts >= 20 and a.n_ports >= 20 then 'port_diversity'
         else null
     end                                                    as rule_evidence
