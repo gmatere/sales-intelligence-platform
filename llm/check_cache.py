@@ -12,7 +12,7 @@ Expected when caching works:
     call 3  same as call 2
 
 Usage:
-    python check_cache.py [prompt_version]
+    python check_cache.py [prompt_version] [model_override]
 """
 
 from __future__ import annotations
@@ -41,6 +41,8 @@ SAMPLE = {
 def main() -> None:
     version = sys.argv[1] if len(sys.argv) > 1 else "v3"
     model, system, template = load_prompt(version)
+    if len(sys.argv) > 2:
+        model = sys.argv[2]
     prompt = render(template, SAMPLE)
     client = anthropic.Anthropic()
 
