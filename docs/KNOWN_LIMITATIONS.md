@@ -132,6 +132,17 @@ real company on shared hosting exposes one host and looks tiny, while a company
 using many subdomains looks large. The ICP size bands inherit that error
 directly. Firmographic data (headcount, revenue) would replace it.
 
+**[fixed] IP addresses were becoming entities.**
+Certificates can be issued to a bare IP address, and the certificate-CN
+fallback accepted them, so addresses with no organisation behind them entered
+the prospect pipeline. Found by eye, reading a 25-row sample built for the eval
+set — `155.159.120.87` appeared as a candidate company.
+
+Nothing caught it because nothing could: the value is a valid, non-null,
+correctly-typed string, so every schema test passed. Fixed by rejecting
+IPv4 and IPv6 forms in staging, and guarded going forward by
+`assert_entities_are_not_addresses`.
+
 **[risk] Certificate-derived entity keys can attribute to the wrong company.**
 `int_entity_hosts` falls back to the certificate CN when there is no reverse
 DNS record. A certificate can legitimately be issued for a domain hosted
@@ -222,11 +233,44 @@ fit so a partial run covers the entities most likely to be real companies, but
 everything below the cut stays `U - unclassified` and never reaches a rep.
 Production would run the full queue on a batch endpoint overnight.
 
-**[risk] Classification quality is unmeasured at time of writing.**
-Precision on `end_customer_company` is the metric that matters — a false
-positive puts a hosting provider in a call list — and it is not yet known. The
-eval harness and labelled set exist to answer this; any number quoted before
-they run is a guess.
+**[measured] Classification precision is 0.750 on the class that matters.**
+v3 on Haiku 4.5, against 25 hand-labelled entities: accuracy 0.520, precision
+on `end_customer_company` 0.750, recall 0.500. One false positive
+(`ibercsm.net`) would have reached a rep's call list. Full analysis in
+`evals/RESULTS.md`.
+
+**[risk] The eval set is too small to separate the configurations.**
+`end_customer_company` has support of 6 and each configuration made four
+predictions in it, so the difference between 0.750 and 0.500 precision is one
+row. Only v3-over-v2 is defensible, because it moved three metrics at once on a
+fixed model. Everything else is noise, and the numbers should not be read to
+three decimal places. 100–150 examples with two labellers and adjudicated
+disagreements is what these comparisons need.
+
+**[risk] The labeller had evidence the model did not.**
+Single-host entities with unfamiliar names — `gane.com.br`, `provet.in`,
+`bml.cz`, `web.com`, `xssl.net` — fail identically across every configuration.
+The human resolved them by looking the companies up; the model sees one host, a
+product string, and an org name belonging to whoever owns the IP block. The
+scores therefore understate the model relative to its inputs, and simultaneously
+identify a real capability gap in the product. Both readings are true. The fix
+is more evidence — HTTP page titles, WHOIS, or a search tool — not prompt
+tuning.
+
+**[gap] A known prompt fix is deliberately unapplied.**
+`ax5z.com` carries `myra security` in its org list and every configuration
+missed it. Unlike the single-host cases the evidence was present and unused, and
+an instruction to scan the org list for security-vendor names would likely fix
+it. Not applied: changing a prompt after seeing an eval and then reporting that
+same eval turns a measurement into a fiction. It belongs in v4, against a set
+built after the change.
+
+**[risk] The stronger model scored worse on the deployment metric.**
+Sonnet 5 had the best accuracy (0.600) and the worst precision on
+`end_customer_company` (0.500), because it commits where Haiku hedges.
+Decisiveness is the wrong disposition when a wrong commitment reaches a
+salesperson. Worth flagging because the intuitive move — upgrade the model — is
+the wrong one for this metric.
 
 **[gap] No human-review queue is wired up.**
 Low-confidence classifications are recorded with their confidence score but

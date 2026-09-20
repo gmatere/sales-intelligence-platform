@@ -1,0 +1,118 @@
+# LABELLING WORKSHEET — 25 entities
+#
+# After each "->" type ONE of these six words:
+#
+#   company      a normal business (shop, factory, law firm, SaaS, charity)
+#   hosting      sells web hosting, servers, VPS, cloud
+#   isp          internet or phone provider
+#   security     CDN / WAF / security vendor (a competitor)
+#   government   council, ministry, university, school, public body
+#   unknown      you genuinely cannot tell
+#
+# Anything after a "#" on a line is a note to yourself — write down WHY,
+# especially where you were unsure. Save the file when done.
+#
+# Evidence is shown under each line: country, hosts, ports, the registered
+# org name (usually the hosting provider, not the company), and software.
+# ----------------------------------------------------------------------
+
+ 1. gane.com.br                      -> company
+      US · 1 hosts · 3 ports · org: hostdime com
+      running: Apache httpd, Control Web Panel
+
+ 2. provet.in                        -> company
+      CA · 1 hosts · 2 ports · org: hut8 hpc
+      running: nginx
+
+ 3. wintram.com.tw                   -> company
+      TW · 1 hosts · 1 ports · org: data communication business group
+      running: Hikvision IP Camera
+
+ 4. bml.cz                           -> company
+      CZ · 1 hosts · 1 ports · org: inway   a s  network
+      running: Apache httpd
+
+ 5. mobile-cti.com                   -> isp
+      JP · 1 hosts · 1 ports · org: sakura internet
+      running: OpenSSH
+
+ 6. 155.159.120.87                   -> isp #had to do detailed (2 step) search to get to this
+      PE · 2 hosts · 1 ports · org: cloud innovation
+      running: Pure-FTPd
+
+ 7. nichost.ru                       -> hosting
+      RU · 8 hosts · 2 ports · org: ru center | jsc  ru center
+      running: nginx
+
+ 8. jdsports.id                      -> company
+      ID · 2 hosts · 3 ports · org: salesforce com | pt azec indonesia management services
+      running: Postfix smtpd
+
+ 9. web.com                          -> hosting
+      US · 2 hosts · 2 ports · org: web com group | register com
+      running: none
+
+10. xssl.net                         -> hosting
+      GB · 3 hosts · 5 ports · org: easyspace
+      running: Exim smtpd, cPanel, Apache httpd
+
+11. ultaserver.net                   -> hosting
+      DE · 12 hosts · 9 ports · org: ultahost | firstcolo | gci network solutions | x dsl networking soluti
+      running: nginx
+
+12. rb-hosting.io                    -> hosting
+      BE · 23 hosts · 1 ports · org: combell nv
+      running: nginx
+
+13. ibercsm.net                      -> hosting
+      ES · 14 hosts · 4 ports · org: ayesa ibermatica  sau | ansib solutions
+      running: Apache httpd, Microsoft IIS httpd, Fortinet FortiGate-200E
+
+14. vpshostgator.com                 -> hosting
+      US · 17 hosts · 10 ports · org: oso grande ip services | hostgator com | newfold digital
+      running: n8n, Exim smtpd, Apache httpd
+
+15. ax5z.com                         -> security
+      DE · 68 hosts · 2 ports · org: soprado | myra security | bymyra
+      running: none
+
+16. cyber-folks.pl                   -> hosting
+      PL · 241 hosts · 15 ports · org: cd inf kr | cf vps gd | sh shared hosting kr | cf shared hosting gd | 
+      running: Apache httpd, LiteSpeed httpd, nginx, ProFTPD, MariaDB, Open
+
+17. sarenet.es                       -> isp
+      ES · 110 hosts · 10 ports · org: osakidetza | pais varios | fundacion gaiker | autoridad portuaria de b
+      running: nginx, Postfix smtpd, SonicWall, OpenResty
+
+18. dreamhostps.com                  -> hosting
+      US · 225 hosts · 6 ports · org: inmotion hosting | new dream network | dreamhost
+      running: nginx, Apache httpd
+
+19. libertypr.net                    -> isp
+      PR · 160 hosts · 9 ports · org: liberty cablevision   caguas | liberty communications of puerto rico |
+      running: micro_httpd, Apache httpd, Dahua-based DVR, Dropbear sshd, G
+
+20. ed.ac.uk                         -> government
+      US · 226 hosts · 8 ports · org: university of edinburgh | the university of edinburgh | pantheon | the
+      running: Jetty, Apache httpd, ArangoDB, nginx, Sendmail
+
+21. cottontex.ro                     -> company
+      RO · 2 hosts · 2 ports · org: s c  cottontex | take ionescu  40
+      running: none
+
+22. pollub.pl                        -> government
+      PL · 2 hosts · 1 ports · org: politechnika lubelska
+      running: nginx
+
+23. somesite.de                      -> hosting
+      DE · 4 hosts · 2 ports · org: hamburg internet exchange
+      running: nginx, Apache httpd
+
+24. magma.ca                         -> isp
+      CA · 4 hosts · 3 ports · org: rogers communications canada | hut 8 mining
+      running: ntpd, Apache httpd
+
+25. cyberwebserver-17.de             -> hosting
+      DE · 2 hosts · 2 ports · org: cyberwebhosting ip network
+      running: Postfix smtpd
+

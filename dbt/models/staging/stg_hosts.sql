@@ -32,8 +32,15 @@ typed as (
         -- recovers hosts with no PTR record. Coalescing is a downstream
         -- decision, not an ingest one.
         primary_domain,
+
+        -- Certificates can be issued to a bare IP address, and an IP is never
+        -- an organisation. Without this guard those leak through the fallback
+        -- and become "entities" with nobody behind them — found by reading a
+        -- sampled eval set, where 155.159.120.87 appeared as a prospect.
         case
             when ssl_cert_cn is null then null
+            when regexp_matches(ssl_cert_cn, '^[0-9]{1,3}(\.[0-9]{1,3}){3}$') then null
+            when contains(ssl_cert_cn, ':') then null            -- IPv6
             -- strip wildcard prefix: *.acme.com -> acme.com
             when starts_with(ssl_cert_cn, '*.') then substr(ssl_cert_cn, 3)
             else ssl_cert_cn

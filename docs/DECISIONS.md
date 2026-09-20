@@ -315,6 +315,35 @@ is economically irrelevant — is the transferable part, not the answer.
 
 ---
 
+## D13 — Ship v3 on Haiku 4.5, not the stronger model
+
+**Decision.** Production classification runs v3 on Haiku 4.5.
+
+**Why.** Measured against 25 hand-labelled entities:
+
+| Config | Accuracy | Precision on `end_customer_company` | Recall |
+|---|---:|---:|---:|
+| v2 · Haiku | 0.480 | 0.667 | 0.333 |
+| **v3 · Haiku** | 0.520 | **0.750** | **0.500** |
+| v3 · Sonnet | **0.600** | 0.500 | 0.333 |
+
+Sonnet wins on accuracy and loses on the metric that governs deployment. It
+commits to `end_customer_company` where Haiku returns `unknown`, which raises
+overall correctness and lowers precision on the one class where a wrong answer
+reaches a salesperson. **Higher accuracy, worse product.**
+
+**What the data does not support.** With support of 6 and four predictions per
+config, the precision gap is one row. Only v3-over-v2 is defensible — three
+metrics moving together on a fixed model. The rest is noise and is reported as
+such.
+
+**Standing constraint this encodes.** The asymmetry that set the tiering rules
+and the heuristic thresholds also sets the model choice: a confident wrong
+"company" is worse than an honest `unknown`. Every layer of this system is
+tuned toward the same bias, and the eval confirms the model layer should be too.
+
+---
+
 ## D8 — Fit and intent stay separate
 
 **Decision.** Two independent 0–100 scores rather than one blended ranking,
