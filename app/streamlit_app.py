@@ -131,6 +131,14 @@ tier_sel = st.sidebar.multiselect("Tier", tiers,
 markets = sorted(df.primary_country_name.dropna().unique())
 market_sel = st.sidebar.multiselect("Market", markets, default=[])
 
+# Public sector dominates the ranking — universities and research institutes
+# run large, old, heterogeneous estates, so they accumulate findings. They are
+# genuine buyers but a different motion: procurement and tenders, not a cold
+# call. Separated so a rep can work one or the other, not a mixed list.
+segment = st.sidebar.radio(
+    "Segment", ["All", "Commercial only", "Public sector only"], index=1,
+    help="Public sector means universities, government bodies and schools.")
+
 size_bands = {"Any": (0, 10**9), "1 host": (1, 1), "2–10": (2, 10),
               "11–100": (11, 100), "101–500": (101, 500), "500+": (501, 10**9)}
 size_sel = st.sidebar.selectbox("Estate size", list(size_bands), index=0)
@@ -142,6 +150,10 @@ actively_exploited = st.sidebar.checkbox(
     "Actively exploited only", help="A vulnerability with EPSS above 10%.")
 
 view = df[df.tier.isin(tier_sel)] if tier_sel else df
+if segment == "Commercial only":
+    view = view[view.entity_class == "end_customer_company"]
+elif segment == "Public sector only":
+    view = view[view.entity_class == "government_or_education"]
 if market_sel:
     view = view[view.primary_country_name.isin(market_sel)]
 low, high = size_bands[size_sel]

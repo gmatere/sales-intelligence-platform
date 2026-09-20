@@ -287,4 +287,40 @@ _to be filled in as built_
 
 ## Application
 
-_to be filled in as built_
+**[risk] Tier A is too large to be a call list.**
+Of 3,000 classified entities, 971 were confirmed organisations and **787 of
+those — 81% — landed in tier A**. The cause is structural rather than a bad
+threshold: the model queue is already filtered to entities carrying at least
+one security signal, so by the time scoring runs, intent is high for almost
+everything that survives. `intent_score >= 50` no longer discriminates.
+
+The app still ranks correctly within the tier, so the list is usable top-down,
+but the tier label has stopped carrying information. The fix is to set the
+threshold from the distribution after filtering rather than from a round
+number chosen before it — or to make tier a percentile rather than an absolute
+cut. Not applied, because retuning thresholds to produce a pleasing tier
+distribution after seeing the output is the same error as tuning a prompt after
+seeing its eval.
+
+**[trade-off] The ranking skews heavily public sector.**
+Nine of the top fifteen tier-A accounts are universities, research institutes
+or government bodies. This is a genuine property of the data rather than a
+defect: public-sector estates are large, old and heterogeneous, so they
+accumulate findings, and their domains make them easy to identify confidently.
+
+They are real buyers, but the sales motion is different — procurement and
+tenders, not a cold call. Surfaced rather than suppressed, via a segment filter
+defaulting to commercial-only, so a rep works one list or the other rather than
+a mixed one.
+
+**[gap] Outreach openers are template-generated, not model-written.**
+The "what to say" text is assembled deterministically from the specific finding
+rather than generated. It is accurate and it hedges correctly on
+version-inferred CVEs, but it will read the same across accounts sharing a
+finding type. An LLM-drafted opener per account is the obvious next increment
+and was scoped out for time.
+
+**[trade-off] The app reads a static snapshot.**
+No database, no refresh, no auth. Correct for a demonstration and for the
+batch-enrichment architecture, but a production deployment would need a
+scheduled rebuild of the serving artifact and access control over it.

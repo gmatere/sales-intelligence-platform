@@ -1,5 +1,13 @@
+[server]
+# Bind to loopback only. Streamlit's default binds every interface and prints a
+# public-IP URL, which on a managed laptop means an unauthenticated service
+# advertising itself on the LAN. Ignored by Streamlit Community Cloud, which
+# manages its own networking.
+address = "localhost"
+headless = true
+
+[browser]
+gatherUsageStats = false
+
 [theme]
 base = "light"
-
-[server]
-headless = true

@@ -1,4 +1,12 @@
-# App runtime (Streamlit Community Cloud installs from this file)
-streamlit==1.39.0
-pandas==2.2.3
-pyarrow==17.0.0
+# App runtime only. Streamlit Community Cloud installs from this file; the
+# pipeline's own dependencies live in ingest/requirements.txt and never reach
+# the deployed app, which reads a static Parquet and calls nothing.
+#
+# Minimum-version constraints rather than exact pins, deliberately. Pinning
+# pyarrow==17.0.0 broke a local install on Python 3.14 — no wheel existed, pip
+# fell back to building from source, and it failed. The deploy host's Python
+# version is not ours to choose, so the resolver needs room to pick a build
+# that exists there.
+streamlit>=1.39
+pandas>=2.2
+pyarrow>=17.0
