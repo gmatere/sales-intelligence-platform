@@ -1,0 +1,292 @@
+{
+  "n": 25,
+  "accuracy": 0.52,
+  "per_class": {
+    "end_customer_company": {
+      "support": 6,
+      "tp": 3,
+      "fp": 1,
+      "fn": 3,
+      "precision": 0.75,
+      "recall": 0.5,
+      "f1": 0.6
+    },
+    "hosting_or_cloud": {
+      "support": 11,
+      "tp": 7,
+      "fp": 3,
+      "fn": 4,
+      "precision": 0.7,
+      "recall": 0.6363636363636364,
+      "f1": 0.6666666666666666
+    },
+    "cdn_or_security_vendor": {
+      "support": 1,
+      "tp": 0,
+      "fp": 0,
+      "fn": 1,
+      "precision": null,
+      "recall": 0.0,
+      "f1": null
+    },
+    "isp_telco": {
+      "support": 5,
+      "tp": 1,
+      "fp": 1,
+      "fn": 4,
+      "precision": 0.5,
+      "recall": 0.2,
+      "f1": 0.28571428571428575
+    },
+    "government_or_education": {
+      "support": 2,
+      "tp": 2,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    "unknown": {
+      "support": 0,
+      "tp": 0,
+      "fp": 7,
+      "fn": 0,
+      "precision": 0.0,
+      "recall": null,
+      "f1": null
+    }
+  },
+  "prompt_version": "v3",
+  "model": "claude-haiku-4-5",
+  "errors": 0,
+  "elapsed_s": 8.3,
+  "run_at": "2026-09-20T06:21:44",
+  "details": [
+    {
+      "entity_domain": "gane.com.br",
+      "true_class": "end_customer_company",
+      "predicted": "hosting_or_cloud",
+      "confidence": 0.92,
+      "correct": false,
+      "model_reasoning": "Domain is .com.br but org is HostDime, a known US hosting provider. Control Web Panel is hosting management software.",
+      "labeller_note": ""
+    },
+    {
+      "entity_domain": "provet.in",
+      "true_class": "end_customer_company",
+      "predicted": "unknown",
+      "confidence": 0.35,
+      "correct": false,
+      "model_reasoning": "Single host, opaque domain name, org (Hut8 HPC) does not match domain. Insufficient evidence to classify.",
+      "labeller_note": ""
+    },
+    {
+      "entity_domain": "wintram.com.tw",
+      "true_class": "end_customer_company",
+      "predicted": "end_customer_company",
+      "confidence": 0.72,
+      "correct": true,
+      "model_reasoning": "Single host, single port, Hikvision IP camera only. Minimal, coherent stack suggests one organisation running own systems.",
+      "labeller_note": ""
+    },
+    {
+      "entity_domain": "bml.cz",
+      "true_class": "end_customer_company",
+      "predicted": "unknown",
+      "confidence": 0.35,
+      "correct": false,
+      "model_reasoning": "Single host, minimal services. Org name does not match domain. Insufficient evidence to distinguish small business from infrastructure.",
+      "labeller_note": ""
+    },
+    {
+      "entity_domain": "mobile-cti.com",
+      "true_class": "isp_telco",
+      "predicted": "unknown",
+      "confidence": 0.35,
+      "correct": false,
+      "model_reasoning": "Single host, minimal footprint. Org is Japanese hosting provider Sakura Internet, not matching domain. No recognisable identity signals.",
+      "labeller_note": ""
+    },
+    {
+      "entity_domain": "155.159.120.87",
+      "true_class": "isp_telco",
+      "predicted": "unknown",
+      "confidence": 0.35,
+      "correct": false,
+      "model_reasoning": "Two hosts, one FTP port, generic org name. Insufficient evidence to distinguish single user from infrastructure provider.",
+      "labeller_note": "had to do detailed (2 step) search to get to this"
+    },
+    {
+      "entity_domain": "nichost.ru",
+      "true_class": "hosting_or_cloud",
+      "predicted": "hosting_or_cloud",
+      "confidence": 0.82,
+      "correct": true,
+      "model_reasoning": "Domain name includes \"host\", 8 hosts across 2 ports suggests multi-tenancy, org matches domain, Russia.",
+      "labeller_note": ""
+    },
+    {
+      "entity_domain": "jdsports.id",
+      "true_class": "end_customer_company",
+      "predicted": "end_customer_company",
+      "confidence": 0.78,
+      "correct": true,
+      "model_reasoning": "Domain jdsports.id matches recognisable retail brand. Small, coherent stack (mail, web) typical of single organisation. Indonesia ccTLD and local org PT AZEC Indonesia.",
+      "labeller_note": ""
+    },
+    {
+      "entity_domain": "web.com",
+      "true_class": "hosting_or_cloud",
+      "predicted": "unknown",
+      "confidence": 0.3,
+      "correct": false,
+      "model_reasoning": "Only 2 hosts, 2 ports, no products detected. Insufficient evidence to classify reliably.",
+      "labeller_note": ""
+    },
+    {
+      "entity_domain": "xssl.net",
+      "true_class": "hosting_or_cloud",
+      "predicted": "unknown",
+      "confidence": 0.35,
+      "correct": false,
+      "model_reasoning": "Opaque domain name. Org names Easyspace (UK hosting provider), not domain. Small coherent estate with cPanel suggests either hosted business or reseller. Cannot distinguish.",
+      "labeller_note": ""
+    },
+    {
+      "entity_domain": "ultaserver.net",
+      "true_class": "hosting_or_cloud",
+      "predicted": "hosting_or_cloud",
+      "confidence": 0.82,
+      "correct": true,
+      "model_reasoning": "Domain name contains \"server\", org \"ultahost\" matches and is known hosting brand. Multiple distinct unrelated orgs in registrations suggest multi-tenant reseller.",
+      "labeller_note": ""
+    },
+    {
+      "entity_domain": "rb-hosting.io",
+      "true_class": "hosting_or_cloud",
+      "predicted": "hosting_or_cloud",
+      "confidence": 0.88,
+      "correct": true,
+      "model_reasoning": "Domain name \"rb-hosting\" signals hosting provider. Org names Combell (Belgian hosting company). 23 hosts, one port, one product: multi-tenant infrastructure pattern.",
+      "labeller_note": ""
+    },
+    {
+      "entity_domain": "ibercsm.net",
+      "true_class": "hosting_or_cloud",
+      "predicted": "end_customer_company",
+      "confidence": 0.75,
+      "correct": false,
+      "model_reasoning": "14 hosts across 4 ports suggests single organisation. Coherent stack: Apache, IIS, FortiGate firewall. Orgs include Ayesa Ibermatica; domain implies different entity running its own systems.",
+      "labeller_note": ""
+    },
+    {
+      "entity_domain": "vpshostgator.com",
+      "true_class": "hosting_or_cloud",
+      "predicted": "hosting_or_cloud",
+      "confidence": 0.92,
+      "correct": true,
+      "model_reasoning": "Domain contains \"vpshost\" and \"gator\"; registered orgs include \"hostgator com\" and \"newfold digital\" (HostGator parent). Hosting provider brand.",
+      "labeller_note": ""
+    },
+    {
+      "entity_domain": "ax5z.com",
+      "true_class": "cdn_or_security_vendor",
+      "predicted": "hosting_or_cloud",
+      "confidence": 0.72,
+      "correct": false,
+      "model_reasoning": "68 hosts, 2 ports suggests single service repeated across many machines. Org \"soprado\" matches domain structure. German hosting provider pattern.",
+      "labeller_note": ""
+    },
+    {
+      "entity_domain": "cyber-folks.pl",
+      "true_class": "hosting_or_cloud",
+      "predicted": "hosting_or_cloud",
+      "confidence": 0.88,
+      "correct": true,
+      "model_reasoning": "Domain matches org \"cyber folks s a\". 241 hosts, 15 ports, mixed web servers and databases. High host-to-port ratio with generic stack suggests multi-tenant reseller.",
+      "labeller_note": ""
+    },
+    {
+      "entity_domain": "sarenet.es",
+      "true_class": "isp_telco",
+      "predicted": "hosting_or_cloud",
+      "confidence": 0.78,
+      "correct": false,
+      "model_reasoning": "110 hosts across 10 ports with 4 distinct products suggests multi-tenancy. Multiple unrelated organisations in registrations (Osakidetza, Fundacion Gaiker, port authority, regional development institutes) indicate diverse tenants rather than single organisation.",
+      "labeller_note": ""
+    },
+    {
+      "entity_domain": "dreamhostps.com",
+      "true_class": "hosting_or_cloud",
+      "predicted": "hosting_or_cloud",
+      "confidence": 0.93,
+      "correct": true,
+      "model_reasoning": "DreamHost is a recognized hosting provider. Org matches domain. 225 hosts, 6 ports, WordPress stack indicates shared hosting multi-tenancy.",
+      "labeller_note": ""
+    },
+    {
+      "entity_domain": "libertypr.net",
+      "true_class": "isp_telco",
+      "predicted": "isp_telco",
+      "confidence": 0.92,
+      "correct": true,
+      "model_reasoning": "Caribbean telecom incumbent. Registered orgs match domain. Estate shows 160 hosts, 9 ports with CPE and router devices indicating subscriber equipment management.",
+      "labeller_note": ""
+    },
+    {
+      "entity_domain": "ed.ac.uk",
+      "true_class": "government_or_education",
+      "predicted": "government_or_education",
+      "confidence": 0.96,
+      "correct": true,
+      "model_reasoning": ".ac.uk domain is definitive for UK university. Org matches institutional name. Coherent but heterogeneous research estate.",
+      "labeller_note": ""
+    },
+    {
+      "entity_domain": "cottontex.ro",
+      "true_class": "end_customer_company",
+      "predicted": "end_customer_company",
+      "confidence": 0.82,
+      "correct": true,
+      "model_reasoning": "Domain matches registered org. Small coherent estate: 2 hosts, 2 ports, nginx stack. Romanian .ro domain suggests local business, not infrastructure.",
+      "labeller_note": ""
+    },
+    {
+      "entity_domain": "pollub.pl",
+      "true_class": "government_or_education",
+      "predicted": "government_or_education",
+      "confidence": 0.96,
+      "correct": true,
+      "model_reasoning": "Polish technical university. Domain pollub.pl with matching org \"politechnika lubelska\", coherent minimal stack.",
+      "labeller_note": ""
+    },
+    {
+      "entity_domain": "somesite.de",
+      "true_class": "hosting_or_cloud",
+      "predicted": "isp_telco",
+      "confidence": 0.78,
+      "correct": false,
+      "model_reasoning": "Org is Hamburg Internet Exchange, a known German internet exchange operator. Small estate consistent with exchange infrastructure.",
+      "labeller_note": ""
+    },
+    {
+      "entity_domain": "magma.ca",
+      "true_class": "isp_telco",
+      "predicted": "unknown",
+      "confidence": 0.45,
+      "correct": false,
+      "model_reasoning": "Domain name opaque; registered orgs (Rogers, Hut 8 Mining) don't match domain. Small coherent estate inconclusive without organisation clarity.",
+      "labeller_note": ""
+    },
+    {
+      "entity_domain": "cyberwebserver-17.de",
+      "true_class": "hosting_or_cloud",
+      "predicted": "hosting_or_cloud",
+      "confidence": 0.78,
+      "correct": true,
+      "model_reasoning": "Domain name contains \"webserver\" and \"hosting\". Org registration names \"cyberwebhosting\". Generic mail and web stack typical of hosting provider.",
+      "labeller_note": ""
+    }
+  ]
+}
