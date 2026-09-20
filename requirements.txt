@@ -1,0 +1,4 @@
+# App runtime (Streamlit Community Cloud installs from this file)
+streamlit==1.39.0
+pandas==2.2.3
+pyarrow==17.0.0

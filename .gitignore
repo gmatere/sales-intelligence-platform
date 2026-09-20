@@ -1,10 +1,21 @@
+# Source data and pipeline output — these live on the processing instance and
+# never belong in the repo.
 *.zst
 *.parquet
+
+# ...except the curated serving artifact, which is the app's only input and has
+# to ship with it. A few thousand rows of company-level findings; no raw scan
+# records and no IP addresses.
+!app/data/accounts.parquet
+
 .env
-__pycache__/
-target/
 .streamlit/secrets.toml
-.DS_Store
-**/.DS_Store
+
+__pycache__/
+*.pyc
+target/
+dbt_packages/
+logs/
+
 .DS_Store
 **/.DS_Store
