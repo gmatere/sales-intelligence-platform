@@ -281,7 +281,38 @@ workflow does not exist.
 
 ## Evals
 
-_to be filled in as built_
+**[risk] One labeller, no adjudication.**
+All 25 labels come from a single person with no second opinion and no measure
+of inter-rater agreement. Where a label is wrong, the model is penalised for
+being right, and nothing in the process would surface that. Two labellers with
+disagreements adjudicated is the standard fix and was skipped for time.
+
+**[risk] The labeller had evidence the model did not.**
+Labels were resolved partly by looking companies up. The model sees one host, a
+product string and an org name belonging to whoever owns the IP block. Every
+score therefore understates the model relative to its actual inputs — and
+simultaneously identifies a real capability gap in the product, since the
+product does need to identify those companies. Both readings are true; which
+one you act on decides whether you tune the prompt or go and find more
+evidence.
+
+**[gap] No inter-version significance testing.**
+`run_eval.py` reports deltas between configurations but no confidence interval.
+With support of 6 on the headline class, a one-row difference moves precision
+by 0.25, so the deltas invite over-reading. The report states this in prose;
+the harness should state it in arithmetic.
+
+**[gap] Prompt worked-examples are excluded, but nothing else is.**
+`build_labelled_set.py` parses the prompt files and excludes any entity used as
+a worked example, so the obvious leakage path is closed. Entities the prompt
+describes *generically* — a named provider brand, a recognisable ccTLD pattern
+— are not excluded and cannot easily be.
+
+**[trade-off] The eval measures classification only.**
+Scoring, tiering and outreach generation have no labelled ground truth. They
+are deterministic and covered by dbt tests, so they are verifiable rather than
+measurable — but "the tiering is sensible" is currently an assertion backed by
+reading output, not a number.
 
 ---
 
