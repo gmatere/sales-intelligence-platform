@@ -51,6 +51,24 @@ EVIDENCE = [
 ]
 
 
+def already_in_set() -> set[str]:
+    """Entities already present in the labelled set.
+
+    Excluded from new batches so the set can be grown incrementally without
+    re-labelling work already done, and without a duplicate quietly
+    double-weighting one entity in the score.
+    """
+    if not OUT.exists():
+        return set()
+    seen = set()
+    for line in OUT.open(encoding="utf-8"):
+        try:
+            seen.add(json.loads(line)["entity_domain"])
+        except (json.JSONDecodeError, KeyError):
+            continue
+    return seen
+
+
 def example_entities() -> set[str]:
     """Domains appearing as worked examples in any prompt version.
 
@@ -149,15 +167,18 @@ def to_record(row: dict) -> dict:
 
 def main() -> None:
     n = int(sys.argv[1]) if len(sys.argv) > 1 else 25
+    batch = Path(sys.argv[2]) if len(sys.argv) > 2 else REPO / "evals" / "batch.jsonl"
 
-    if OUT.exists():
-        print(f"{OUT} already exists — refusing to overwrite hand-applied labels.")
-        print("Delete it explicitly if you intend to rebuild the worksheet.")
-        sys.exit(1)
+    # New entities go to a separate batch file rather than into the labelled set
+    # directly. Writing straight into the set risks clobbering hand-applied
+    # labels, and those are the only artefact here that cannot be regenerated.
+    existing = already_in_set()
+    examples = example_entities()
+    exclude = existing | examples
 
-    exclude = example_entities()
     conn = duckdb.connect(WAREHOUSE, read_only=True)
-    print(f"sampling {n} entities:")
+    print(f"sampling {n} new entities "
+          f"({len(existing)} already labelled, {len(examples)} prompt examples):")
     rows = sample(conn, exclude, n)
     conn.close()
 
@@ -165,13 +186,13 @@ def main() -> None:
         print(f"\nonly {len(rows)} available — the queue may be smaller than "
               f"expected, or exclusions too broad")
 
-    OUT.parent.mkdir(parents=True, exist_ok=True)
-    with OUT.open("w", encoding="utf-8") as sink:
+    batch.parent.mkdir(parents=True, exist_ok=True)
+    with batch.open("w", encoding="utf-8") as sink:
         for row in rows:
             sink.write(json.dumps(to_record(row), ensure_ascii=False) + "\n")
 
-    print(f"wrote {len(rows)} entities to {OUT}")
-    print(f"excluded {len(exclude)} prompt worked-examples: {sorted(exclude)}\n")
+    print(f"wrote {len(rows)} entities to {batch}")
+    print(f"excluded {len(examples)} prompt worked-examples: {sorted(examples)}\n")
     print("Fill `true_class` on every line with one of:")
     for cls in CLASSES:
         print(f"  {cls}")

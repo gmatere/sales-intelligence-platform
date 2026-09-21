@@ -76,20 +76,32 @@ def main() -> None:
         sys.exit(1)
 
     labels = parse_worksheet()
-    rows = [json.loads(l) for l in LABELLED.open(encoding="utf-8")]
 
-    missing = [r["entity_domain"] for r in rows if r["entity_domain"] not in labels]
+    # Labels may belong to a fresh batch or to the existing set. Read both,
+    # apply labels wherever they match, and append anything new — so the set
+    # can be grown in passes without ever rewriting labels already applied.
+    batch = REPO / "evals" / "batch.jsonl"
+    existing = ([json.loads(l) for l in LABELLED.open(encoding="utf-8")]
+                if LABELLED.exists() else [])
+    incoming = ([json.loads(l) for l in batch.open(encoding="utf-8")]
+                if batch.exists() else [])
+
+    known = {r["entity_domain"] for r in existing}
+    rows = existing + [r for r in incoming if r["entity_domain"] not in known]
+
+    missing = [r["entity_domain"] for r in rows
+               if r["entity_domain"] not in labels and not r.get("true_class")]
     if missing:
-        print(f"{len(missing)} entities have no label in the worksheet — "
-              f"nothing written:\n")
+        print(f"{len(missing)} entities have no label — nothing written:\n")
         for domain in missing:
             print(f"  {domain}")
         sys.exit(1)
 
     for row in rows:
-        row["true_class"], note = labels[row["entity_domain"]]
-        if note:
-            row["labeller_note"] = note
+        if row["entity_domain"] in labels:
+            row["true_class"], note = labels[row["entity_domain"]]
+            if note:
+                row["labeller_note"] = note
 
     with LABELLED.open("w", encoding="utf-8") as sink:
         for row in rows:
