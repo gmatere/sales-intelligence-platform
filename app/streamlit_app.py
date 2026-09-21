@@ -13,9 +13,24 @@ than around the shape of the underlying data.
 from __future__ import annotations
 
 from pathlib import Path
+from typing import NamedTuple
 
 import pandas as pd
 import streamlit as st
+
+
+class Finding(NamedTuple):
+    """One observable finding, in the three forms the UI needs.
+
+    `label` and `detail` fill a table cell, where the column header supplies
+    context. `phrase` is for prose, where it cannot — "1 host" is meaningful
+    under a "Detail" column and meaningless mid-sentence.
+    """
+
+    label: str
+    detail: str
+    evidence: str   # observed | tested | inferred
+    phrase: str
 
 DATA = Path(__file__).parent / "data" / "accounts.parquet"
 
@@ -36,86 +51,137 @@ def load() -> pd.DataFrame:
     return pd.read_parquet(DATA)
 
 
-def signal_rows(row) -> list[tuple[str, str, str]]:
+def count(n: int, singular: str, plural: str | None = None) -> str:
+    """'1 host' / '4 hosts'. The '1 host(s)' construction reads as unfinished
+    text, and an opener that looks unfinished does not get sent."""
+    return f"{n} {singular if n == 1 else (plural or singular + 's')}"
+
+
+def signal_rows(row) -> list[Finding]:
     """Observable findings for one account, worst first.
 
-    Separated into what was directly observed and what was inferred from a
-    version banner, because the two carry very different weight on a call.
+    Each finding carries three forms: a short label and a detail for the table,
+    and a prose phrase for the outreach opener. They differ because a table cell
+    can rely on its column header for context and a sentence cannot — "1 host"
+    means nothing mid-sentence without the finding it belongs to.
+
+    `evidence` separates what was directly observed from what was inferred from
+    a version banner. The two carry very different weight on a call, and
+    collapsing them is how a rep ends up asserting a vulnerability that was
+    never confirmed.
     """
-    out: list[tuple[str, str, str]] = []
+    out: list[Finding] = []
+    add = out.append
 
     if row.n_exposed_datastores:
-        out.append(("Exposed database", f"{int(row.n_exposed_datastores)} service(s) "
-                    "reachable from the public internet", "observed"))
+        n = int(row.n_exposed_datastores)
+        add(Finding("Exposed database",
+                    f"{count(n, 'database')} reachable from the public internet",
+                    "observed",
+                    f"{count(n, 'database')} reachable from the public internet"))
     if row.n_remote_access:
-        out.append(("Remote access exposed", f"{int(row.n_remote_access)} service(s) — "
-                    "telnet, RDP, VNC, FTP or SMB", "observed"))
+        n = int(row.n_remote_access)
+        add(Finding("Remote access exposed",
+                    f"{count(n, 'service')} — telnet, RDP, VNC, FTP or SMB",
+                    "observed",
+                    f"{count(n, 'remote-access service')} open to the internet"))
     if row.heartbleed_vulnerable:
-        out.append(("Heartbleed", "Failed a direct vulnerability probe", "tested"))
+        add(Finding("Heartbleed", "Failed a direct vulnerability probe", "tested",
+                    "a host failing a direct Heartbleed probe"))
     if row.n_exposed_cameras:
-        out.append(("Exposed cameras", f"{int(row.n_exposed_cameras)} IP camera "
-                    "interface(s) reachable", "observed"))
+        n = int(row.n_exposed_cameras)
+        add(Finding("Exposed cameras", f"{count(n, 'camera interface')} reachable",
+                    "observed", f"{count(n, 'IP camera interface')} publicly reachable"))
     if row.n_open_directories:
-        out.append(("Open directory listing", f"{int(row.n_open_directories)} host(s)",
-                    "observed"))
+        n = int(row.n_open_directories)
+        add(Finding("Open directory listing", count(n, "host"), "observed",
+                    f"directory listings exposed on {count(n, 'host')}"))
     if row.n_expired_certs:
-        out.append(("Expired certificate", f"{int(row.n_expired_certs)} host(s) serving "
-                    "an expired certificate", "observed"))
+        n = int(row.n_expired_certs)
+        add(Finding("Expired certificate", f"{count(n, 'host')} serving an expired cert",
+                    "observed", f"{count(n, 'host')} serving an expired certificate"))
     if pd.notna(row.soonest_cert_expiry_days) and 0 <= row.soonest_cert_expiry_days <= 30:
-        out.append(("Certificate expiring", f"In {int(row.soonest_cert_expiry_days)} days",
-                    "observed"))
+        d = int(row.soonest_cert_expiry_days)
+        add(Finding("Certificate expiring", f"In {count(d, 'day')}", "observed",
+                    f"a certificate expiring in {count(d, 'day')}"))
     if row.n_eol_services:
-        out.append(("End-of-life software", f"{int(row.n_eol_services)} service(s) past "
-                    "vendor support", "observed"))
+        n = int(row.n_eol_services)
+        add(Finding("End-of-life software", f"{count(n, 'service')} past vendor support",
+                    "observed", f"{count(n, 'service')} running software past vendor support"))
     if row.n_dead_ssl:
-        out.append(("SSLv2/SSLv3 accepted", f"{int(row.n_dead_ssl)} host(s)", "observed"))
+        n = int(row.n_dead_ssl)
+        add(Finding("SSLv2/SSLv3 accepted", count(n, "host"), "observed",
+                    f"{count(n, 'host')} still accepting SSLv2 or SSLv3"))
     if row.n_deprecated_tls:
-        out.append(("TLS 1.0/1.1 accepted", f"{int(row.n_deprecated_tls)} host(s) — a "
-                    "PCI-DSS finding", "observed"))
+        n = int(row.n_deprecated_tls)
+        add(Finding("TLS 1.0/1.1 accepted", f"{count(n, 'host')} — a PCI-DSS finding",
+                    "observed",
+                    f"{count(n, 'host')} still accepting TLS 1.0 or 1.1, which is a "
+                    "PCI-DSS finding"))
     if row.n_self_signed:
-        out.append(("Self-signed certificate", f"{int(row.n_self_signed)} host(s)",
-                    "observed"))
+        n = int(row.n_self_signed)
+        add(Finding("Self-signed certificate", count(n, "host"), "observed",
+                    f"{count(n, 'host')} serving a self-signed certificate"))
     if row.n_weak_cert_sig:
-        out.append(("SHA-1 certificate signature", f"{int(row.n_weak_cert_sig)} host(s)",
-                    "observed"))
+        n = int(row.n_weak_cert_sig)
+        add(Finding("SHA-1 certificate signature", count(n, "host"), "observed",
+                    f"{count(n, 'certificate')} still signed with SHA-1"))
     if pd.notna(row.max_epss) and row.max_epss > 0:
-        out.append((f"{row.headline_cve}",
-                    f"{row.max_epss:.1%} chance of exploitation within 30 days"
-                    f"{f' — CVSS {row.headline_cve_cvss:.1f}' if pd.notna(row.headline_cve_cvss) else ''}",
-                    "inferred"))
+        cvss = (f" — CVSS {row.headline_cve_cvss:.1f}"
+                if pd.notna(row.headline_cve_cvss) else "")
+        add(Finding(str(row.headline_cve),
+                    f"{row.max_epss:.1%} chance of exploitation within 30 days{cvss}",
+                    "inferred",
+                    f"software associated with {row.headline_cve}, which carries a "
+                    f"{row.max_epss:.0%} probability of exploitation in the next 30 days"))
     return out
 
 
 def opener(row, signals) -> str:
-    """A first line grounded in a specific finding.
+    """A first line grounded in specific, checkable findings.
 
-    Deliberately hedged on anything version-inferred: the product and version
-    are observed facts, the vulnerability is a possibility. Leading with
-    'you have 99 vulnerabilities' is usually wrong and loses the call.
+    Uses the prose form of each finding rather than the table form, and never
+    lowercases it — the text carries acronyms (RDP, SMB, TLS, SHA-1) that read
+    as typos in lower case, and an opener that looks sloppy does not get sent.
+
+    Version-inferred findings are hedged explicitly. The product and version
+    are observed facts; the vulnerability is a possibility. Leading with "you
+    have 99 vulnerabilities" is usually wrong and costs the rep the call.
     """
     name = row.company
     if not signals:
         return f"No specific finding to lead with for {name}."
 
-    headline, detail, kind = signals[0]
+    observed = [f for f in signals if f.evidence in ("observed", "tested")]
+    inferred = [f for f in signals if f.evidence == "inferred"]
 
-    if kind == "inferred" and pd.notna(row.headline_cve_product):
-        version = f" {row.headline_cve_version}" if pd.notna(row.headline_cve_version) else ""
-        return (
-            f"Hi — we track internet-facing exposure across {row.primary_country_name}. "
-            f"{name} appears to be running {row.headline_cve_product}{version} on a "
-            f"public-facing host. That version is associated with {row.headline_cve}, "
-            f"which currently carries a {row.max_epss:.0%} probability of exploitation "
-            f"in the next 30 days. Worth fifteen minutes to confirm whether you're "
-            f"affected?"
-        )
+    lines = [f"Hi — we track internet-facing exposure across "
+             f"{row.primary_country_name}."]
 
-    return (
-        f"Hi — we track internet-facing exposure across {row.primary_country_name}. "
-        f"We can see {headline.lower()} on {name}'s public infrastructure "
-        f"({detail.lower()}). That's visible to anyone scanning, not just us. "
-        f"Worth a short call?"
-    )
+    if observed:
+        first = observed[0].phrase
+        rest = f", and {observed[1].phrase}" if len(observed) > 1 else ""
+        lines.append(f"On {name}'s public infrastructure we can currently see "
+                     f"{first}{rest}. That's visible to anyone scanning, not "
+                     f"just us.")
+
+    # The product name is deliberately not asserted alongside the CVE. Both are
+    # aggregated per entity by highest EPSS, but from potentially different
+    # services on the host — so "you are running Apache, which is vulnerable to
+    # <CVE>" can pair a web server with a glibc bug. Observed once in testing:
+    # Apache httpd against CVE-2015-0235 (GHOST). A wrong technical claim in a
+    # first email is worse than a vaguer true one, so the opener cites the
+    # finding and asks, rather than diagnosing.
+    if inferred:
+        lines.append(
+            f"Separately, one of your public hosts is running a software version "
+            f"associated with {row.headline_cve} — currently around a "
+            f"{row.max_epss:.0%} chance of being exploited in the next 30 days. "
+            f"That one is inferred from a version banner rather than tested, so "
+            f"it's worth confirming whether it actually applies to you.")
+
+    lines.append("Happy to walk through the detail on a short call if useful.")
+    return " ".join(lines)
 
 
 df = load()
@@ -217,7 +283,8 @@ left, right = st.columns([2, 1])
 with left:
     st.subheader("Why now")
     if signals:
-        st.dataframe(pd.DataFrame(signals, columns=["Finding", "Detail", "Evidence"]),
+        st.dataframe(pd.DataFrame([(f.label, f.detail, f.evidence) for f in signals],
+                                  columns=["Finding", "Detail", "Evidence"]),
                      use_container_width=True, hide_index=True)
         st.caption("**observed** — seen directly in the scan.  "
                    "**tested** — confirmed by an active probe.  "

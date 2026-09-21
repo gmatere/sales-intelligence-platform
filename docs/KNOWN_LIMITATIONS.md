@@ -313,6 +313,25 @@ tenders, not a cold call. Surfaced rather than suppressed, via a segment filter
 defaulting to commercial-only, so a rep works one list or the other rather than
 a mixed one.
 
+**[fixed] The opener paired a product with a CVE that did not belong to it.**
+`headline_cve_product` and `headline_cve` are both aggregated per entity by
+`arg_max(..., top_cve_epss)` — but from potentially *different services on the
+same host*, since the aggregation picks each column independently. The draft
+outreach therefore asserted things like "you are running Apache httpd, a
+version associated with CVE-2015-0235" — CVE-2015-0235 is GHOST, a glibc
+vulnerability, not an Apache one.
+
+Caught by reading three generated openers aloud before recording a demo. A
+wrong technical claim in a first email is worse than a vaguer true one: it is
+the single fastest way for a rep to lose credibility, and it would have been
+invisible in any test that checked the text was non-empty.
+
+The opener now cites the CVE and its exploitation probability, states plainly
+that it is inferred from a version banner rather than tested, and asks the
+recipient to confirm rather than diagnosing for them. The proper fix is to
+carry product and CVE through the aggregation as a single struct so they cannot
+be separated — deferred, and the reason recorded here.
+
 **[gap] Outreach openers are template-generated, not model-written.**
 The "what to say" text is assembled deterministically from the specific finding
 rather than generated. It is accurate and it hedges correctly on
