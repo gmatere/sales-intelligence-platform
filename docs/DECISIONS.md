@@ -344,6 +344,53 @@ tuned toward the same bias, and the eval confirms the model layer should be too.
 
 ---
 
+## D12d — The cache floor was correct; the measurement of our own prompt was not
+
+**Resolved.** Three iterations assumed the documented minimum was wrong. It was
+not. Our cacheable prefix was roughly **34 tokens short of 4,096**, and a
+chars-per-token estimate hid that.
+
+**How it was settled.** A sweep across nine prefix sizes, run three ways —
+without tools, with tools and a forced `tool_choice`, with tools and `auto` —
+changing one variable at a time:
+
+| Prefix | Verdict |
+|---:|---|
+| ~3,875 | refused |
+| 4,203 | cached |
+| 4,557 | cached |
+
+Forced and automatic tool choice cached at identical sizes, so `tool_choice`
+was never implicated.
+
+**The mistake, precisely.** The 4,096 floor applies to the **cacheable prefix**
+— tools plus system, everything before the breakpoint — not to total input. The
+user message sits after the breakpoint and is never part of the cached block.
+Measured on a cached call: total 4,983 = **4,557 prefix + 426 user message**.
+
+v3 on Haiku reported 4,492 total input. Subtracting a user message of similar
+size leaves a prefix near **4,062** — just under the threshold. I had estimated
+that prefix at 4,283 from character counts and declared it clear. The estimate
+was ~5% high, which was exactly enough to place a block below a hard threshold
+while appearing to clear it.
+
+**Why this kept recurring.** Every previous attempt reasoned from an estimate.
+None measured. `cache_creation_input_tokens` on a cold call reports the prefix
+exactly, and three rounds of argument could have been one probe.
+
+**Not fixed in v3, deliberately.** Adding ~300 tokens would cross the floor and
+cut cost from $0.00518 to roughly $0.00155 per call — a 3.3× reduction. But
+that is a prompt change, and the eval measured v3 exactly as it stands.
+Shipping an edited prompt while quoting the old prompt's precision would
+invalidate the measurement, which is the same error avoided elsewhere in this
+project. Recorded as costed work for v4, to be measured against a labelled set
+built afterwards.
+
+**Generalisable:** an estimate that is 5% wrong is harmless against a gradient
+and fatal against a threshold. Where a hard cutoff exists, measure it.
+
+---
+
 ## D8 — Fit and intent stay separate
 
 **Decision.** Two independent 0–100 scores rather than one blended ranking,

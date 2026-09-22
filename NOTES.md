@@ -121,6 +121,27 @@ in a field I only had because I'd built the trace schema before I needed it.
 That is the strongest argument I have for why per-call tracing is not optional
 scaffolding. A silent pricing failure has no other surface.
 
+**Resolved the caching thing, and the answer was that I was wrong, not the
+docs.** I'd assumed three times over that the documented minimum cacheable
+prefix didn't apply to us. It did. Our block was about 34 tokens under 4,096.
+
+The error is worth naming precisely: the floor applies to the *cacheable
+prefix*, not to total input, and I'd been measuring total. The user message
+sits after the cache breakpoint and never forms part of the block, so reading
+the floor against total input overstates the prefix by however long the message
+happens to be.
+
+Underneath that, a simpler failure: every attempt reasoned from a
+chars-per-token estimate. None measured. The estimate ran about 5% high, which
+is invisible against a gradient and decisive against a hard cutoff. A sweep
+across prefix sizes settled it in two minutes and cost a few cents — three
+rounds of argument that could have been one probe.
+
+I'm not applying the fix. Adding 300 tokens would clear the floor and cut cost
+3.3×, but the eval measured this prompt as it stands, and shipping an edited
+prompt while quoting the old one's precision is the thing I've been careful
+about everywhere else.
+
 **Sampling beat reasoning again.** Two random samples of 25 excluded entities
 each contained exactly one false positive, both government bodies, both scoring
 0.62–0.64 on the hosting heuristic while every real ISP sat at 0.79–1.00. I

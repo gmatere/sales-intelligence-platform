@@ -72,34 +72,58 @@ def main() -> None:
     print(f"model   : {model}")
     print(f"tools   : {'included' if use_tool else 'omitted'}"
           f"{' (forced)' if use_tool and force else ''}\n")
-    print(f"{'target':>7} {'actual in':>10} {'write':>8} {'read':>8}  verdict")
+    print(f"{'target':>7} {'total':>9} {'prefix':>9} {'write':>8} {'read':>8}  verdict")
 
-    first_cached = None
+    # Track the cacheable prefix, not total input. The threshold applies to the
+    # prefix up to the breakpoint; the user message sits after it and is never
+    # part of the cached block. Reporting totals overstates the prefix by
+    # however long the message happens to be — which is precisely the error
+    # that made a block ~34 tokens short of the floor look like it cleared it.
+    largest_refused = 0
+    smallest_cached = None
+
     for size in SIZES:
         try:
             r = probe(client, model, size, use_tool, force)
         except anthropic.APIError as exc:
-            print(f"{size:>7} {'-':>10} {'-':>8} {'-':>8}  ERROR {exc}")
+            print(f"{size:>7} {'-':>9} {'-':>9} {'-':>8} {'-':>8}  ERROR {exc}")
             continue
 
-        actual = (r["first"].get("input_tokens", 0)
-                  + (r["first"].get("cache_creation_input_tokens", 0) or 0))
         write = r["first"].get("cache_creation_input_tokens", 0) or 0
         read = r["second"].get("cache_read_input_tokens", 0) or 0
-        ok = write > 0 or read > 0
-        if ok and first_cached is None:
-            first_cached = actual
-        print(f"{size:>7} {actual:>10,} {write:>8,} {read:>8,}  "
-              f"{'CACHED' if ok else 'refused'}")
+        fresh = r["first"].get("input_tokens", 0) or 0
+        prior = r["first"].get("cache_read_input_tokens", 0) or 0
+
+        # The prefix is whichever of write/read is non-zero. On a cold run the
+        # first call writes it; on a warm run (a previous sweep left the same
+        # prefix cached) the first call already reads it, and `fresh` is only
+        # the user message.
+        prefix = write or prior or read
+        total = fresh + write + prior
+        cached = bool(write or read)
+
+        if cached and smallest_cached is None:
+            smallest_cached = prefix
+        elif not cached:
+            largest_refused = max(largest_refused, total)
+
+        print(f"{size:>7} {total:>9,} {prefix:>9,} {write:>8,} {read:>8,}  "
+              f"{'CACHED' if cached else 'refused'}")
 
     print()
-    if first_cached:
-        print(f"Caching begins at roughly {first_cached:,} actual input tokens "
-              f"for {model}.")
+    if smallest_cached:
+        print(f"Smallest prefix that cached : {smallest_cached:,} tokens")
+        if largest_refused:
+            print(f"Largest total that refused  : {largest_refused:,} tokens "
+                  f"(prefix was smaller — the user message is excluded)")
+        print(f"\nThe floor applies to the cacheable prefix, not to total input. "
+              f"Measure the prefix from `cache_creation_input_tokens` on a cold "
+              f"call; estimating it from character counts is how a block lands "
+              f"just under the threshold and looks like it cleared.")
     else:
-        print(f"No size cached for {model}. That points away from a size "
-              f"threshold — suspect the request shape or an account-level "
-              f"setting rather than the prompt.")
+        print(f"No size cached for {model} at any tested prefix. That points "
+              f"away from a size threshold — suspect the request shape or an "
+              f"account-level setting rather than the prompt.")
 
 
 if __name__ == "__main__":

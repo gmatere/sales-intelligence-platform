@@ -208,12 +208,29 @@ country list is retained alongside it so territory filtering can use either.
 
 ## LLM layer
 
-**[fixed] Prompt caching silently did not work.**
-`cache_control` on the system block was ignored because the block was ~1,118
-tokens including the tool schema, below the 2048-token minimum for Haiku. No
-error is raised for this. Every call paid full input rate and `cached_tokens`
-was 0 across 25 traced calls. Only visible because the trace schema records
-cached tokens per call.
+**[diagnosed, not fixed] Prompt caching does not engage on the shipped prompt.**
+`cache_control` is placed correctly — the identical code caches on Sonnet 5 —
+but the v3 cacheable prefix on Haiku 4.5 measures around **4,062 tokens against
+a 4,096 minimum**. Roughly 34 tokens short.
+
+The floor applies to the *cacheable prefix* (tools + system, everything before
+the breakpoint), not to total input. The user message sits after the breakpoint
+and never forms part of the cached block, so reading the floor against total
+input overstates the prefix by the length of the message.
+
+Three attempts to clear the threshold failed because each reasoned from a
+chars-per-token estimate rather than a measurement. The estimate ran ~5% high,
+which is harmless against a gradient and fatal against a hard cutoff. Settled
+by `llm/probe_cache_floor.py`, which sweeps prefix sizes and reads the true
+value from `cache_creation_input_tokens` on a cold call: refused at ~3,875,
+cached at 4,203. Forced and automatic `tool_choice` behaved identically, so
+that was never implicated.
+
+**Not fixed in v3 on purpose.** Adding ~300 tokens clears the floor and cuts
+cost from $0.00518 to roughly $0.00155 per call. That is a prompt change, and
+the eval measured v3 as it currently stands — shipping an edited prompt while
+quoting the unedited prompt's precision would invalidate the measurement.
+Costed and deferred to v4. See `docs/DECISIONS.md` D12d.
 
 **[fixed] Cost estimator understated by 5.7×.**
 It omitted the tool schema (sent on every request), used 4 chars/token against
