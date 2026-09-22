@@ -34,6 +34,8 @@ REPO = Path(__file__).resolve().parent.parent
 WAREHOUSE = "/root/warehouse.duckdb"
 OUT = REPO / "evals" / "labelled_set.jsonl"
 
+BATCH_ID = 1
+
 CLASSES = [
     "end_customer_company",
     "hosting_or_cloud",
@@ -160,14 +162,33 @@ def to_record(row: dict) -> dict:
     return {
         **{field: clean(row.get(field)) for field in EVIDENCE},
         "sequential_name_ratio": round(float(row.get("sequential_name_ratio") or 0), 2),
+        # Which labelling pass this entity came from. Prompt changes written
+        # after reading failures on batch 1 are, by definition, tuned on
+        # batch 1 — so a later batch is the only clean measurement of whether
+        # they generalised. The harness reports batches separately for this
+        # reason; an aggregate over both flatters a tuned prompt.
+        "batch": BATCH_ID,
         "true_class": "",
         "labeller_note": "",
     }
 
 
 def main() -> None:
+    global BATCH_ID
     n = int(sys.argv[1]) if len(sys.argv) > 1 else 25
     batch = Path(sys.argv[2]) if len(sys.argv) > 2 else REPO / "evals" / "batch.jsonl"
+
+    # Batch number continues from whatever is already labelled, so successive
+    # passes stay distinguishable without being tracked by hand.
+    seen_batches = set()
+    if OUT.exists():
+        for line in OUT.open(encoding="utf-8"):
+            try:
+                seen_batches.add(json.loads(line).get("batch", 1))
+            except json.JSONDecodeError:
+                continue
+    BATCH_ID = max(seen_batches) + 1 if seen_batches else 1
+    print(f"this is batch {BATCH_ID}")
 
     # New entities go to a separate batch file rather than into the labelled set
     # directly. Writing straight into the set risks clobbering hand-applied

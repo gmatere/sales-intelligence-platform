@@ -127,12 +127,29 @@ def run_config(rows: list[dict], args) -> dict:
         })
 
     result = score(pairs)
+
+    # Score each labelling batch separately as well as together. A prompt
+    # revised after reading failures on batch 1 is tuned on batch 1, so its
+    # score there is contaminated — later batches are the only clean read on
+    # whether the change generalised. An aggregate hides that distinction and
+    # flatters whichever version was tuned most recently.
+    by_batch = {}
+    batches = {row.get("batch", 1) for row in rows}
+    if len(batches) > 1:
+        for b in sorted(batches):
+            subset = [(row["true_class"], d["predicted"])
+                      for row, d in zip(rows, details)
+                      if row.get("batch", 1) == b and d]
+            if subset:
+                by_batch[str(b)] = score(subset)
+
     result.update({
         "prompt_version": args.prompt_version,
         "model": classifier.model,
         "errors": errors,
         "elapsed_s": round(time.time() - started, 1),
         "run_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
+        "by_batch": by_batch,
         "details": details,
     })
     return result
@@ -172,6 +189,15 @@ def report(result: dict, previous: dict | None) -> None:
 
     prev_acc = (previous or {}).get("accuracy")
     print(f"\naccuracy {result['accuracy']:.3f}{delta(result['accuracy'], prev_acc)}")
+
+    if result.get("by_batch"):
+        print("\nby labelling batch — later batches are the clean read on a "
+              "prompt tuned against earlier ones:")
+        for b, m in result["by_batch"].items():
+            head = m["per_class"][HEADLINE]
+            print(f"  batch {b}: n={m['n']:>3}  accuracy {m['accuracy']:.3f}  "
+                  f"{HEADLINE} precision {fmt(head['precision'])}  "
+                  f"(support {head['support']})")
 
     head = result["per_class"][HEADLINE]
     print(f"\nHEADLINE — precision on {HEADLINE}: {fmt(head['precision']).strip()}")
