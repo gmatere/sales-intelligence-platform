@@ -503,7 +503,7 @@ reading output, not a number.
 ## Application
 
 **[risk] Tier A is too large to be a call list.**
-Of 3,000 classified entities, 1,004 were confirmed organisations and **818 of
+Of 3,000 classified entities, 1,005 were confirmed organisations and **818 of
 those — 81% — landed in tier A**. The cause is structural rather than a bad
 threshold: the model queue is already filtered to entities carrying at least
 one security signal, so by the time scoring runs, intent is high for almost

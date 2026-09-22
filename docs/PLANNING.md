@@ -162,7 +162,7 @@ at n=25 came last at n=75. Support is now 18 on the headline class, which is
 better and still not enough. 150+ with two labellers and adjudicated
 disagreements is the next step.
 
-**3. Tier thresholds set from the distribution.** 818 of 1,004 confirmed
+**3. Tier thresholds set from the distribution.** 818 of 1,005 confirmed
 prospects land in tier A, because the queue is already filtered to entities
 with a finding, so the urgency threshold no longer discriminates. Percentiles
 rather than absolute cuts.

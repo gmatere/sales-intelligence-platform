@@ -32,7 +32,7 @@ A rep-facing list answering three questions per account — **why this account**
 **why now**, **what do I say** — filterable by territory, segment, estate size,
 urgency, and whether an incumbent security vendor is already present.
 
-From 8,914,693 records: 252,078 entities, 3,000 classified, **1,004 confirmed
+From 8,914,693 records: 252,078 entities, 3,000 classified, **1,005 confirmed
 organisations**, none of them infrastructure.
 
 ## Architecture
