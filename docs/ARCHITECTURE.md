@@ -215,7 +215,8 @@ figures below are from trace data, not arithmetic:
 | Config | $/call | Cached tokens/call | 43,577 entities |
 |---|---:|---:|---:|
 | v3 · Haiku 4.5 | $0.00504 | 0 — prefix below the floor | $220 |
-| v3 · Sonnet 5 *(shipped)* | $0.00355 | 5,519 | **$155** |
+| **v4 · Sonnet 5** *(shipped)* | $0.00368 | 6,470 | **$161** |
+| v3 · Sonnet 5 | $0.00355 | 5,519 | $155 |
 | v4 · Haiku 4.5 | $0.00205 | 4,214 | $89 |
 
 The ordering is the point: **the shipped Sonnet configuration is cheaper per

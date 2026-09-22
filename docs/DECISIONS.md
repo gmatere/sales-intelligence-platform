@@ -536,3 +536,47 @@ documented breach behaviour — degrade to rules-only tiering, queue the
 remainder, alert — becomes a live path rather than a hypothetical one. Stated
 plainly here instead of quietly re-basing the ceiling to $200, which would
 have made the overrun disappear without changing anything real.
+
+---
+
+## D16 — Ship v4 on Sonnet 5, reversing D14
+
+**Decision.** Production classification runs **v4 on Sonnet 5**. The 3,000
+production classifications were re-run under it, for the second time.
+
+**Why.** v4 was built for one reason — v3's cacheable prefix sat just under
+Haiku's 4,096-token floor, so caching silently failed on the configuration that
+led at n=25. v4 is v3 plus enough margin to clear it.
+
+But v4 also carried three *content* changes: an instruction to scan the
+organisation list for security-vendor names, guidance that a recognisable
+organisation name outweighs a small estate, and three more worked examples.
+Those were only ever evaluated on Haiku, because a Haiku cache floor was the
+whole point. When D14 moved the shipped model to Sonnet, that cell of the grid
+was never re-run.
+
+Running it cost $0.28:
+
+| | v3 · Sonnet | v4 · Sonnet |
+|---|---:|---:|
+| Held-out precision | 0.667 | **0.727** |
+| Recall | 0.444 | **0.722** |
+| Accuracy | 0.667 | **0.773** |
+| False positives | 5 | **4** |
+| `isp_telco` precision | 1.000 | 1.000 |
+
+**Recall decided it, not precision.** The held-out precision gain of 0.060 is
+less than one row and sits inside the 4.5% run-to-run noise measured in
+`KNOWN_LIMITATIONS.md`. Recall moving 0.444 → 0.722 is five more real companies
+out of eighteen, with *fewer* false positives. Judging on precision alone would
+have called this a tie and shipped the worse configuration.
+
+**Consequence.** 1,005 confirmed organisations against 972 under v3 — 33 more
+companies reaching the market — and tier A grows from 779 to 818.
+
+**What this says about the process.** The same mistake had already appeared in
+four places: the classifier's resume key, the trace analysis, the export filter
+and now the eval matrix. The first three keyed on `prompt_version` alone and
+were fixed by keying on the **(prompt, model) pair**. This one was different —
+the pair was understood, and one cell had simply never been run. Keying
+correctly does not help if the grid has a hole in it.
