@@ -88,16 +88,25 @@ of them — `reverse_dns_zone`, `seed_list`, `cloud_tag_volume`,
 `sequential_hostnames`, `port_diversity`. The heuristics exist because a
 curated list of names cannot reach the long tail of regional hosts.
 
-$155 is measured, not projected: the 3,000-entity production run cost
-**$0.00355/call at 5,519 cached input tokens per call**. Caching is the
-dominant term — the shipped Sonnet configuration is *cheaper per call than
-uncached Haiku* ($0.00504), despite a much higher list price.
+That $155 is measured rather than projected — the production run's own traces —
+but it is **on-demand** pricing, and the two levers that matter are both larger
+than the model choice:
 
-Production ceiling: **$150 per full refresh**, which the chosen configuration
-now sits marginally above. Sonnet was chosen on precision and the overrun is
-3%; v4 on Haiku is the documented fallback at $89 per refresh if cost becomes
-the binding constraint. On breach, degrade to rules-only tiering, queue the
-remainder, alert.
+| | Per full refresh |
+|---|---:|
+| Sonnet, on-demand *(as actually run)* | ~$161 |
+| **Sonnet, Batch API — 50%, caching still applies** | **~$80** |
+| Haiku, batched | ~$45 |
+
+Caching is the first lever: the shipped Sonnet configuration is *cheaper per
+call than uncached Haiku*, despite triple the list price. Batching is the
+second, and `classify.py` implements only the synchronous path — a gap recorded
+in [`docs/KNOWN_LIMITATIONS.md`](docs/KNOWN_LIMITATIONS.md), since the
+architecture doc claimed batch and the code could not do it.
+
+Production ceiling: **$150 per full refresh** — comfortable batched, ~7% over
+as executed. On breach, degrade to rules-only tiering, queue the remainder,
+alert.
 
 ## Measured quality
 

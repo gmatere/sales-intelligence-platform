@@ -272,6 +272,24 @@ line in the bill before being constrained to 20 words. Keeping it at all costs
 roughly 35% more than returning a bare label — paid for auditability, since it
 is what makes a classification reviewable against the labelled set.
 
+**[gap] The classifier only implements the synchronous path, which doubles the
+bill.**
+The Batch API processes identical requests at 50% of standard rates with prompt
+caching still applied, and classification is the textbook workload for it:
+43,577 independent requests, nothing waiting on any single one. A full refresh
+is ~$80 batched against ~$161 on-demand.
+
+`classify.py` implements only the synchronous concurrent loop. That was the
+right first choice — 25-entity tests and eval runs needed to return in seconds,
+and batch turnaround is minutes to 24 hours — but it was never revisited when
+the workload changed from "iterate on 25" to three successive runs of 3,000.
+The cost of not revisiting it was about $16 of the $32 spent on classification.
+
+Worth recording as a gap rather than a trade-off, because the architecture
+document asserted that production would run the queue on a batch endpoint while
+the reference implementation could not do it. A design that exists only in the
+prose is not a design.
+
 **[gap] Only part of the queue is classified.**
 43,577 entities qualify; the budget covers a fraction. The queue is ordered by
 fit so a partial run covers the entities most likely to be real companies, but

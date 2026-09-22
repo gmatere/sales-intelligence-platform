@@ -205,12 +205,30 @@ higher. Caching, not model choice, is the dominant term. v4's figure still
 carries cache-write amortisation across only 75 eval calls, so at production
 volume it would land lower.
 
-**The chosen configuration breaches the stated ceiling.** A full 43,577-entity
-refresh on Sonnet is ~$155 against a $150 budget. It was chosen on precision,
-which is the right basis, and the overrun is 3% — but the honest reading is
-that the ceiling now binds rather than being comfortable headroom. v4 on Haiku
-exists as the documented fallback: 43% of the cost, and the configuration to
-switch to if budget becomes the binding constraint rather than accuracy.
+**The synchronous path is the expensive one, and it is the one implemented.**
+Every figure above is on-demand pricing. The Batch API runs identical requests
+asynchronously at **50% of standard rates with prompt caching still applied**,
+which is the correct shape for this workload: 43,577 independent
+classifications, none of them latency-sensitive.
+
+| | Per full refresh |
+|---|---:|
+| v4 · Sonnet, on-demand *(as run)* | ~$161 |
+| **v4 · Sonnet, Batch API** | **~$80** |
+| v4 · Haiku, Batch API | ~$45 |
+
+So the shipped configuration costs about half the $150 ceiling by design and
+roughly 7% over it as actually executed. The gap is entirely an implementation
+choice: `classify.py` is a synchronous concurrent loop, written that way so
+25-entity test cycles and eval runs returned in seconds. That was right while
+iterating and wrong for three successive 3,000-entity production runs, and the
+choice was never revisited when the workload changed shape. Batch scheduling
+is unpredictable enough that the 5-minute cache TTL can lapse mid-batch, so the
+1-hour TTL applies there — a 2× write cost amortised over thousands of reads.
+
+v4 on Haiku remains the accuracy-for-cost fallback, but it is the second lever,
+not the first: batching the chosen model saves more than downgrading it, and
+costs no precision at all.
 
 **What the measurements changed.** The first cost estimate was wrong by 5.7×,
 in three compounding ways: it ignored the tool schema sent on every request,
