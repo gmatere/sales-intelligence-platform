@@ -154,16 +154,35 @@ Designed
   →    43,577 queued          signal filter removed 83,464   ≈ $155
 ```
 
-$155 is 43,577 × the measured $0.00355/call for the shipped configuration. An
-earlier version of this document said $57, which assumed a cached Haiku price
-before the caching work actually landed and before the eval moved the choice
-to Sonnet.
+$155 is 43,577 × the measured $0.00355/call for the shipped configuration.
 
-**The larger lever is the signal filter, not the denylist.** The provider
-denylist removes 125,037 entities; requiring at least one security finding
-removes a further 83,464. An entity with no findings is not a prospect whether
-or not it is a real company, so classifying it buys nothing — and that filter
-is a boolean on an aggregate, not a model call.
+An earlier version of this document said $57. That figure implies $0.00131 per
+call, and no configuration measured in this project has ever come in that
+cheap — the lowest is $0.00205, for v4 on Haiku *with* caching working. The
+original document records no per-call figure behind it, so what went wrong is
+not recoverable; what is recoverable is that it was below the floor of anything
+achievable and was never checked against a trace. It is corrected here rather
+than quietly deleted, because a cost model nobody can reconstruct is the
+failure mode worth flagging.
+
+**The larger lever is the signal filter, not the rules.** The rule tier removes
+125,037 entities; requiring at least one security finding removes a further
+83,464. An entity with no findings is not a prospect whether or not it is a
+real company, so classifying it buys nothing — and that filter is a boolean on
+an aggregate, not a model call.
+
+Worth being precise about what does the removing, because an earlier version of
+this paragraph credited the whole 125,037 to the provider denylist. Five rule
+families contribute and the denylist is one: `reverse_dns_zone`, `seed_list`,
+`cloud_tag_volume`, `sequential_hostnames` and `port_diversity`. The heuristics
+exist precisely because a curated list of provider names cannot reach the long
+tail of regional hosts, which is recorded as a limitation in its own right —
+so attributing the volume to the denylist contradicted that.
+
+The per-family split is recorded in `rule_evidence` on every entity and is
+therefore measurable, but is not reported here. Stating which family does most
+of the work without running that query would repeat the original error in the
+opposite direction.
 
 **Model routing.** Cheap model for classification at volume; a stronger model
 would be reserved for per-account narrative generation on the top few hundred,

@@ -79,9 +79,14 @@ Designed —
   →    43,577 queued        signal filter removed 83,464    ≈ $155
 ```
 
-The larger lever is the **signal filter**, not the denylist. An entity with no
+The larger lever is the **signal filter**, not the rules. An entity with no
 findings is not a prospect whether or not it is a real company, so classifying
 it buys nothing — and that filter is a `WHERE` clause, not a model call.
+
+Five rule families remove those 125,037, and the provider denylist is only one
+of them — `reverse_dns_zone`, `seed_list`, `cloud_tag_volume`,
+`sequential_hostnames`, `port_diversity`. The heuristics exist because a
+curated list of names cannot reach the long tail of regional hosts.
 
 $155 is measured, not projected: the 3,000-entity production run cost
 **$0.00355/call at 5,519 cached input tokens per call**. Caching is the
