@@ -390,6 +390,58 @@ def crm_columns(frame: pd.DataFrame) -> pd.DataFrame:
     return frame[present].rename(columns=cols)
 
 
+def trace_drawer(row) -> None:
+    """Per-account AI telemetry, from the trace of the call that ran.
+
+    Deliberately narrow about what it claims. One model call was made for this
+    account — the entity classification — and its model, prompt version,
+    latency, token counts and cost were recorded at the time. Those are shown.
+
+    The draft above involves no model call, so it has no latency and no cost,
+    and the drawer says so rather than attributing the classifier's numbers to
+    it. Observability that flatters the system is worse than none: the point of
+    a trace is that someone can check it.
+    """
+    with st.expander("🔍  AI diagnostic trace"):
+        model = row.get("class_model")
+        if not model:
+            st.caption(
+                "This artifact was exported without per-call telemetry. Re-run "
+                "`export_curated.py` against the trace file to populate it.")
+            return
+
+        t1, t2, t3, t4 = st.columns(4)
+        t1.metric("Model", str(model).replace("claude-", ""))
+        t2.metric("Prompt", str(row.get("class_prompt_version") or "—"))
+
+        latency = row.get("class_latency_ms")
+        t3.metric("Latency", f"{int(latency):,} ms" if pd.notna(latency) else "—")
+
+        cost = row.get("class_cost_usd")
+        t4.metric("Cost", f"${cost:.5f}" if pd.notna(cost) else "—")
+
+        cached = row.get("class_cached_tokens") or 0
+        tokens_in = row.get("class_input_tokens") or 0
+        tokens_out = row.get("class_output_tokens") or 0
+        st.caption(
+            f"**Task** entity_classification  ·  **Decision** {row.entity_class} "
+            f"at confidence {row.class_confidence:.2f}  ·  **Tokens** "
+            f"{int(tokens_in):,} in ({int(cached):,} served from cache), "
+            f"{int(tokens_out):,} out")
+
+        if cached and pd.notna(cost):
+            st.caption(
+                f"The {int(cached):,} cached tokens are the prompt prefix, billed "
+                f"at a tenth of the input rate. That is why this call cost "
+                f"${cost:.5f} rather than roughly ten times more.")
+
+        st.caption(
+            "One model call was made for this account, and it decided the "
+            "classification only. The draft above is assembled from templates "
+            "and involves no inference, so it has no latency or cost of its own."
+        )
+
+
 df = load()
 
 # ---------------------------------------------------------------- sidebar
@@ -525,6 +577,8 @@ with left:
     st.caption("Assembled from the findings above using templates, not written "
                "by a model at request time. Every claim traces to a row in the "
                "table; inferred findings are hedged in the text.")
+
+    trace_drawer(row)
 
 with right:
     st.subheader("Why this account")

@@ -34,6 +34,7 @@ import duckdb
 REPO = Path(__file__).resolve().parent
 WAREHOUSE = "/root/warehouse.duckdb"
 CLASSIFICATIONS = REPO / "data" / "entity_classifications.jsonl"
+TRACES = REPO / "data" / "traces" / "entity_classification.jsonl"
 DEFAULT_OUT = REPO / "app" / "data" / "accounts.parquet"
 
 # Only entities the model confirmed as real organisations become prospects.
@@ -99,6 +100,55 @@ def load_classifications(conn, version: str, model: str) -> int:
     return len(kept)
 
 
+def load_traces(conn, version: str, model: str) -> int:
+    """Attach the per-call telemetry for each shipped classification.
+
+    The app surfaces model, prompt version, latency and cost per account. Those
+    are real recorded values from the run that produced the verdict, not
+    estimates — so they belong in the artifact next to the verdict rather than
+    being reconstructed in the UI. Keyed on the same (version, model) pair, for
+    the same reason the verdicts are.
+    """
+    if not TRACES.exists():
+        print(f"no traces at {TRACES} — telemetry columns will be null")
+        conn.sql("DROP TABLE IF EXISTS class_traces")
+        conn.sql("""CREATE TABLE class_traces (
+                        entity_domain VARCHAR, class_model VARCHAR,
+                        class_prompt_version VARCHAR, class_latency_ms BIGINT,
+                        class_cost_usd DOUBLE, class_cached_tokens BIGINT,
+                        class_input_tokens BIGINT, class_output_tokens BIGINT)""")
+        return 0
+
+    kept = {}
+    for line in TRACES.open(encoding="utf-8"):
+        try:
+            r = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if r.get("prompt_version") != version or r.get("model") != model:
+            continue
+        if r.get("error") or not r.get("subject"):
+            continue
+        kept[r["subject"]] = r
+
+    conn.sql("DROP TABLE IF EXISTS class_traces")
+    conn.sql("""CREATE TABLE class_traces (
+                    entity_domain VARCHAR, class_model VARCHAR,
+                    class_prompt_version VARCHAR, class_latency_ms BIGINT,
+                    class_cost_usd DOUBLE, class_cached_tokens BIGINT,
+                    class_input_tokens BIGINT, class_output_tokens BIGINT)""")
+    if kept:
+        conn.executemany(
+            "INSERT INTO class_traces VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            [(s, r.get("model"), r.get("prompt_version"), r.get("latency_ms"),
+              r.get("cost_usd"), r.get("cached_tokens") or 0,
+              r.get("input_tokens") or 0, r.get("output_tokens") or 0)
+             for s, r in kept.items()],
+        )
+    print(f"{len(kept):,} traces for {version} / {model}")
+    return len(kept)
+
+
 def build(conn, out: Path) -> None:
     prospects = ", ".join(f"'{c}'" for c in PROSPECT_CLASSES)
 
@@ -148,10 +198,18 @@ def build(conn, out: Path) -> None:
             s.pts_size_band, s.pts_whitespace, s.pts_real_estate,
             s.pts_multi_country, s.pts_low_maturity,
 
-            s.last_seen_at
+            s.last_seen_at,
+
+            -- Recorded telemetry for the call that produced the verdict above.
+            -- Surfaced in the app so a rep can see which model and prompt
+            -- decided this, and an engineer can see what it cost.
+            t.class_model, t.class_prompt_version, t.class_latency_ms,
+            t.class_cost_usd, t.class_cached_tokens,
+            t.class_input_tokens, t.class_output_tokens
 
         FROM company_scores s
         LEFT JOIN classifications c USING (entity_domain)
+        LEFT JOIN class_traces    t USING (entity_domain)
         WHERE c.entity_class IS NOT NULL
     """)
 
@@ -171,6 +229,7 @@ def main() -> None:
 
     n = load_classifications(conn, args.prompt_version, args.model)
     print(f"{n:,} classified entities from {args.prompt_version} / {args.model}")
+    load_traces(conn, args.prompt_version, args.model)
 
     build(conn, out)
 
