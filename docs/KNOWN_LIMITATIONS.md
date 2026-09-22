@@ -372,6 +372,20 @@ was: the filter selects the tagged run, and the two runs disagree on 136 of
 3,000 entities. The artifact now ships the run whose traces exist and which is
 attributable to a named configuration, which is the whole point of the filter.
 
+**[measured] A real credit exhaustion mid-run cost 837 calls and zero
+entities.**
+The account ran out of credit partway through the production run. 837 entities
+exhausted all three retries and were written to the trace as errors — 6,000
+successes plus 837 errors across 6,837 Sonnet records — and every one of them
+was reclassified when the run resumed. The failure is visible in the traces
+and invisible in the output, which is the correct outcome and the first time
+the retry and resume paths were exercised by something other than a test.
+
+Worth stating because the alternative design fails silently here: a classifier
+that dropped failed entities rather than recording them would have produced a
+prospect list quietly missing 837 accounts, with nothing in the output to
+indicate it.
+
 **[measured] The same prompt and model disagree with themselves on 4.5% of
 entities.**
 The double-billed run above left two independent classifications of the same
