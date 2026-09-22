@@ -18,14 +18,21 @@ datacenter about its customers' vulnerabilities and never trust the tool again.
 A false negative removes a real company from the market — costly, but invisible
 and recoverable.
 
-| Config | Accuracy | Precision (all 75) | **Precision (held-out batch)** | Cost/call |
-|---|---:|---:|---:|---:|
-| **v3 · Sonnet 5** | 0.667 | 0.615 | **0.667** | $0.00378 |
-| v2 · Haiku 4.5 | 0.653 | 0.588 | 0.500 | $0.00341 |
-| v4 · Haiku 4.5 | 0.667 | 0.524 | 0.467 | ~$0.00155 |
-| v3 · Haiku 4.5 | 0.627 | 0.471 | 0.385 | $0.00518 |
+| Config | Accuracy | Precision (all 75) | **Precision (held-out)** | Recall | Cost/call |
+|---|---:|---:|---:|---:|---:|
+| **v4 · Sonnet 5** | **0.773** | **0.765** | **0.727** | **0.722** | $0.00368 |
+| v3 · Sonnet 5 | 0.667 | 0.615 | 0.667 | 0.444 | $0.00378 |
+| v2 · Haiku 4.5 | 0.653 | 0.588 | 0.500 | 0.500 | $0.00341 |
+| v4 · Haiku 4.5 | 0.667 | 0.524 | 0.467 | 0.611 | ~$0.00155 |
+| v3 · Haiku 4.5 | 0.627 | 0.471 | 0.385 | 0.444 | $0.00518 |
 
-**Shipped: v3 on Sonnet 5.**
+**Shipped: v4 on Sonnet 5.**
+
+Recall is in this table because it is what moved the decision. On held-out
+precision v4-Sonnet beats v3-Sonnet by 0.060 — less than one row, inside the
+noise measured below. On recall it beats it by **0.278**, which is five more
+real companies found out of 18, while making *fewer* false positives (4 against
+5). Precision alone would have called this a tie.
 
 ---
 
@@ -58,6 +65,40 @@ the time rather than after being caught out by it.
 It is also the argument for *acting* on it. The conclusion was reversed and the
 production run redone on Sonnet, rather than leaving a recommendation the
 evidence no longer supported.
+
+---
+
+## The second reversal: v4 was only ever tested on the wrong model
+
+v4 exists because v3's cacheable prefix sat just under Haiku's 4,096-token
+floor, so caching silently failed on the configuration that led at n=25. v4 is
+v3 plus enough margin to clear it — **and three content changes**: an
+instruction to scan the organisation list for security-vendor names, guidance
+that a recognisable organisation name outweighs a small estate, and three more
+worked examples.
+
+Those content changes were evaluated **only on Haiku**, because v4's whole
+purpose was a Haiku cache floor. When the n=75 eval moved the shipped model to
+Sonnet, nobody re-tested v4 there — so the report described v4 as "the cheap
+Haiku option" when it was really "v3 plus improvements, measured on the cheaper
+model only".
+
+Running it cost $0.28 and changed what ships:
+
+| | v3 · Sonnet | v4 · Sonnet |
+|---|---:|---:|
+| Held-out precision | 0.667 | **0.727** |
+| Recall | 0.444 | **0.722** |
+| Accuracy | 0.667 | **0.773** |
+| False positives | 5 | **4** |
+| `isp_telco` precision | 1.000 | 1.000 |
+
+The lesson is not about v4. It is that **a configuration is the (prompt, model)
+pair**, and this project made the same mistake in four separate places before
+this one — the classifier's resume key, the trace analysis, the export filter,
+and now the eval matrix itself. Three of those were fixed by keying on the
+pair. This one was a hole in coverage: the pair existed as a concept, and one
+cell of the grid had simply never been run.
 
 ---
 
