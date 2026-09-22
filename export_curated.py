@@ -24,6 +24,7 @@ Usage:
 
 from __future__ import annotations
 
+import argparse
 import json
 import sys
 from pathlib import Path
@@ -45,39 +46,57 @@ PROSPECT_CLASSES = ("end_customer_company", "government_or_education")
 MIN_CONFIDENCE = 0.60
 
 
-def load_classifications(conn) -> int:
+def load_classifications(conn, version: str, model: str) -> int:
+    """Load verdicts from exactly one (prompt version, model) configuration.
+
+    Filtering matters more than it looks. The results file accumulates every
+    run ever made, and two runs of the same prompt on different models both
+    carry the same `prompt_version` — so ordering by version alone breaks ties
+    arbitrarily and ships a silent blend of two models. The shipped artifact
+    should be attributable to one configuration, which is also the only one the
+    eval measured.
+    """
     if not CLASSIFICATIONS.exists():
         print(f"no classifications at {CLASSIFICATIONS}")
         sys.exit(1)
 
-    rows = [json.loads(line) for line in CLASSIFICATIONS.open(encoding="utf-8")]
-    if not rows:
-        print("classifications file is empty")
+    seen, kept = 0, {}
+    for line in CLASSIFICATIONS.open(encoding="utf-8"):
+        try:
+            r = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        seen += 1
+        if r.get("prompt_version") != version or r.get("model") != model:
+            continue
+        # Later lines win: the file is append-only, so file order is run order.
+        kept[r["entity_domain"]] = r
+
+    if not kept:
+        models = sorted({(json.loads(l).get("prompt_version"),
+                          json.loads(l).get("model"))
+                         for l in CLASSIFICATIONS.open(encoding="utf-8")})
+        print(f"no rows for {version} / {model}. Available configurations:")
+        for v, m in models:
+            print(f"  {v} / {m}")
         sys.exit(1)
 
-    # Latest verdict per entity wins, so a rerun on a newer prompt supersedes
-    # rather than duplicating.
-    conn.sql("DROP TABLE IF EXISTS raw_class")
+    conn.sql("DROP TABLE IF EXISTS classifications")
     conn.sql("""
-        CREATE TABLE raw_class (
-            entity_domain VARCHAR, prompt_version VARCHAR, entity_class VARCHAR,
-            canonical_name VARCHAR, confidence DOUBLE, reasoning VARCHAR
+        CREATE TABLE classifications (
+            entity_domain VARCHAR, prompt_version VARCHAR, model VARCHAR,
+            entity_class VARCHAR, canonical_name VARCHAR,
+            confidence DOUBLE, reasoning VARCHAR
         )
     """)
     conn.executemany(
-        "INSERT INTO raw_class VALUES (?, ?, ?, ?, ?, ?)",
-        [(r["entity_domain"], r["prompt_version"], r["entity_class"],
-          r["canonical_name"], r["confidence"], r["reasoning"]) for r in rows],
+        "INSERT INTO classifications VALUES (?, ?, ?, ?, ?, ?, ?)",
+        [(r["entity_domain"], r["prompt_version"], r.get("model", ""),
+          r["entity_class"], r["canonical_name"], r["confidence"],
+          r["reasoning"]) for r in kept.values()],
     )
-    conn.sql("""
-        CREATE OR REPLACE TABLE classifications AS
-        SELECT * EXCLUDE (rn) FROM (
-            SELECT *, row_number() OVER (
-                PARTITION BY entity_domain ORDER BY prompt_version DESC) AS rn
-            FROM raw_class
-        ) WHERE rn = 1
-    """)
-    return conn.sql("SELECT count(*) FROM classifications").fetchone()[0]
+    print(f"{seen:,} rows in file, {len(kept):,} for {version} / {model}")
+    return len(kept)
 
 
 def build(conn, out: Path) -> None:
@@ -141,11 +160,17 @@ def build(conn, out: Path) -> None:
 
 
 def main() -> None:
-    out = Path(sys.argv[1]) if len(sys.argv) > 1 else DEFAULT_OUT
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--prompt-version", default="v3")
+    parser.add_argument("--model", default="claude-sonnet-5")
+    parser.add_argument("--out", type=Path, default=DEFAULT_OUT)
+    args = parser.parse_args()
+
+    out = args.out
     conn = duckdb.connect(WAREHOUSE, read_only=False)
 
-    n = load_classifications(conn)
-    print(f"{n:,} classified entities")
+    n = load_classifications(conn, args.prompt_version, args.model)
+    print(f"{n:,} classified entities from {args.prompt_version} / {args.model}")
 
     build(conn, out)
 
