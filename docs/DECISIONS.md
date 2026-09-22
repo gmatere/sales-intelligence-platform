@@ -496,3 +496,38 @@ attacker-operated command-and-control hosts.
 **Consequence.** Neither is a prospect, and surfacing either would cost the rep
 credibility on the first call. Guarded by a dedicated dbt test rather than
 trusted to a WHERE clause.
+
+---
+
+## D15 — Ship at the cost ceiling rather than under it, with a named fallback
+
+**Decision.** Ship v3 on Sonnet 5 at a measured **$0.00355 per call**, which
+puts a full 43,577-entity refresh at **~$155** against a stated ceiling of
+$150. Do not switch to a cheaper configuration to get under the line. Record
+v4 on Haiku ($89 per refresh) as the fallback if cost becomes binding.
+
+**Why.** The configuration was chosen on precision, and precision on
+`end_customer_company` is the metric that decides whether a rep trusts the
+tool. Swapping to the cheaper configuration to satisfy a budget figure trades
+the deployment metric for 3% of a number I set myself, early, before any of
+the per-call costs had been measured.
+
+The measured figures, from trace data rather than arithmetic:
+
+| Config | $/call | Cached tokens/call | 43,577 entities |
+|---|---:|---:|---:|
+| v3 · Haiku 4.5 | $0.00504 | 0 — below the floor | $220 |
+| v3 · Sonnet 5 *(shipped)* | $0.00355 | 5,519 | **$155** |
+| v4 · Haiku 4.5 | $0.00205 | 4,214 | $89 |
+
+**The ordering is the finding.** The shipped Sonnet configuration is cheaper
+per call than *uncached Haiku*, despite a much higher list price. Caching
+dominates model choice at this prompt size, which also means the original $57
+estimate was not conservative-but-safe — it was a different configuration's
+price applied to a decision that had not been made yet.
+
+**Consequence.** The ceiling now binds rather than providing headroom, and the
+documented breach behaviour — degrade to rules-only tiering, queue the
+remainder, alert — becomes a live path rather than a hypothetical one. Stated
+plainly here instead of quietly re-basing the ceiling to $200, which would
+have made the overrun disappear without changing anything real.

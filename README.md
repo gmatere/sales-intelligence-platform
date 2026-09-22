@@ -76,15 +76,23 @@ Designed —
   8,914,693 records
   →   252,078 entities      aggregation
   →   127,041 unresolved    rules removed 125,037
-  →    43,577 queued        signal filter removed 83,464    ≈ $57
+  →    43,577 queued        signal filter removed 83,464    ≈ $155
 ```
 
 The larger lever is the **signal filter**, not the denylist. An entity with no
 findings is not a prospect whether or not it is a real company, so classifying
 it buys nothing — and that filter is a `WHERE` clause, not a model call.
 
-Production ceiling: **$150 per full refresh**. On breach, degrade to rules-only
-tiering, queue the remainder, alert.
+$155 is measured, not projected: the 3,000-entity production run cost
+**$0.00355/call at 5,519 cached input tokens per call**. Caching is the
+dominant term — the shipped Sonnet configuration is *cheaper per call than
+uncached Haiku* ($0.00504), despite a much higher list price.
+
+Production ceiling: **$150 per full refresh**, which the chosen configuration
+now sits marginally above. Sonnet was chosen on precision and the overrun is
+3%; v4 on Haiku is the documented fallback at $89 per refresh if cost becomes
+the binding constraint. On breach, degrade to rules-only tiering, queue the
+remainder, alert.
 
 ## Measured quality
 
@@ -150,7 +158,7 @@ python evals/run_eval.py --prompt-version v3 --model claude-haiku-4-5
 |---|---|
 | `ingest/` | streaming ingest, output profiler, raw-field inspector |
 | `dbt/` | staging → entity → signals → scoring, with 38 tests |
-| `prompts/v1,v2,v3/` | versioned prompts; every trace names the one that produced it |
+| `prompts/v1..v4/` | versioned prompts; every trace names the pair that produced it |
 | `llm/` | classifier, trace schema, cost estimator, cache diagnostics |
 | `evals/` | labelled set, harness, per-configuration results |
 | `skills/` | `entity-classification/SKILL.md` |
@@ -179,9 +187,11 @@ against advisories; it does not test the host. `verified` was false on 100% of
 probability that a vulnerability is being exploited — rather than CVE counts,
 and generated outreach hedges accordingly.
 
-**The eval set is too small to rank the configurations.** 25 examples, support
-of 6 on the headline class. It measures whether the system works; it cannot
-separate a 0.75 from a 0.50.
+**The eval set is still small.** 75 examples, support of 18 on the headline
+class and 12 on the held-out batch, one labeller, no adjudication. At 25 it was
+small enough to produce a confidently wrong ranking and did. At 75 the ordering
+is more trustworthy, not settled — the gap between the top two configurations
+is a couple of rows.
 
 **Tier A holds 787 accounts, which is not a call list.** The queue is already
 filtered to entities with a finding, so urgency is high for nearly everything

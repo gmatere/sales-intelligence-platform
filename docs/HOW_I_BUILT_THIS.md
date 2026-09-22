@@ -77,15 +77,22 @@ shape. They cannot tell you the shape is describing the wrong thing.
 
 ## What I would tell a teammate picking this up
 
-**The eval set is 25 examples and cannot rank the configurations.** Support of
-6 on the headline class means a single row moves precision by 0.25. The number
-it produces — 0.615 precision on `end_customer_company`, 0.667 on held-out
-data — tells you the system works. It does not tell you v3 beats v2 on Sonnet, or that Haiku beats Sonnet,
-even though the table appears to say both. The only comparison I would defend
-is v3 over v2 on a fixed model, because three metrics moved together.
+**The eval set is 75 examples and it already caught me out once.** At 25 it
+ranked v3-on-Haiku first at 0.750 precision and I wrote a recommendation
+against Sonnet on that basis. At 75 the ordering inverted completely — Haiku
+last at 0.385 held-out, Sonnet first at 0.667. Nothing changed but the label
+count. I reversed the recommendation and re-ran production on Sonnet.
+
+The current numbers — 0.615 precision on `end_customer_company`, 0.667
+held-out — tell you the system works and are more trustworthy than the
+previous set. They are not settled: support is 18 overall and 12 on the
+held-out batch, so the gap between the top two configurations is a couple of
+rows.
 
 If you change one thing before shipping this further, make it the eval set:
-100–150 examples, two labellers, disagreements adjudicated.
+150+ examples, two labellers, disagreements adjudicated. I would say that even
+though I already tripled it once, because tripling it is precisely what showed
+me the first answer was wrong.
 
 **And a confound in my own methodology.** When labelling, I looked the companies
 up. The model gets one host, a product string and an org name belonging to

@@ -151,8 +151,13 @@ Designed
   8,914,693 records
   →   252,078 entities        aggregation
   →   127,041 unresolved      rules removed 125,037
-  →    43,577 queued          signal filter removed 83,464   ≈ $57
+  →    43,577 queued          signal filter removed 83,464   ≈ $155
 ```
+
+$155 is 43,577 × the measured $0.00355/call for the shipped configuration. An
+earlier version of this document said $57, which assumed a cached Haiku price
+before the caching work actually landed and before the eval moved the choice
+to Sonnet.
 
 **The larger lever is the signal filter, not the denylist.** The provider
 denylist removes 125,037 entities; requiring at least one security finding
@@ -164,19 +169,48 @@ is a boolean on an aggregate, not a model call.
 would be reserved for per-account narrative generation on the top few hundred,
 where output quality justifies a 5× output price.
 
+**Measured, not projected.** The shipped run classified 3,000 entities on v3 /
+Sonnet 5 at **$0.00355 per call with 5,519 cached input tokens per call** —
+caching engaged for the whole run, including across a restart. The per-call
+figures below are from trace data, not arithmetic:
+
+| Config | $/call | Cached tokens/call | 43,577 entities |
+|---|---:|---:|---:|
+| v3 · Haiku 4.5 | $0.00504 | 0 — prefix below the floor | $220 |
+| v3 · Sonnet 5 *(shipped)* | $0.00355 | 5,519 | **$155** |
+| v4 · Haiku 4.5 | $0.00205 | 4,214 | $89 |
+
+The ordering is the point: **the shipped Sonnet configuration is cheaper per
+call than uncached Haiku**, despite Sonnet's list price being several times
+higher. Caching, not model choice, is the dominant term. v4's figure still
+carries cache-write amortisation across only 75 eval calls, so at production
+volume it would land lower.
+
+**The chosen configuration breaches the stated ceiling.** A full 43,577-entity
+refresh on Sonnet is ~$155 against a $150 budget. It was chosen on precision,
+which is the right basis, and the overrun is 3% — but the honest reading is
+that the ceiling now binds rather than being comfortable headroom. v4 on Haiku
+exists as the documented fallback: 43% of the cost, and the configuration to
+switch to if budget becomes the binding constraint rather than accuracy.
+
 **What the measurements changed.** The first cost estimate was wrong by 5.7×,
 in three compounding ways: it ignored the tool schema sent on every request,
 used a chars-per-token ratio that is model-specific, and assumed 70 output
 tokens against a measured 288. Constraining the response schema to twenty words
-halved output cost and latency. Prompt caching was pursued, measured, and found
-to be refused by the chosen model above its documented minimum — the same code
-caches correctly on another model, so the implementation was never wrong.
-Caching would have saved about $4 at the volume actually run, and the
-investigation was stopped there.
+halved output cost and latency.
+
+Prompt caching took four failed diagnoses before it worked. The minimum
+cacheable prefix is model-dependent and not monotonic with model size, and a
+prefix below it fails *silently* — the request succeeds, the cache fields
+return zero, and nothing surfaces unless you read them. The fix was to stop
+inferring the prefix length and measure it by making one real call and reading
+`cache_creation_input_tokens` back. v4 is v3 plus enough margin to clear the
+4,096-token floor on Haiku, which is why a **longer** prompt costs 2.5× less.
 
 **Ceiling: $150 per full refresh.** On breach: degrade to rules-only tiering,
 queue the remainder, alert. Estimates are validated against trace data rather
-than assumed, because the first one was not.
+than assumed, because the first one was not — and, as above, the current
+configuration is at the ceiling rather than under it.
 
 ---
 

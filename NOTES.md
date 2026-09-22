@@ -147,3 +147,55 @@ each contained exactly one false positive, both government bodies, both scoring
 0.62–0.64 on the hosting heuristic while every real ISP sat at 0.79–1.00. I
 would not have picked that threshold by argument. Twenty-five rows, twice, cost
 about five minutes.
+
+**Applied the fix after all, once it could be measured honestly.** The entry
+above says I wasn't going to add the 300 tokens, because the eval had scored
+the prompt as it stood. That held right up until I grew the labelled set —
+at which point there was a clean set to score a new prompt against, and the
+objection disappeared. v4 is v3 plus margin over the 4,096 floor, scored on
+data built after the change, with batch-1 and batch-2 reported separately
+because v4's wording was written after reading v3's batch-1 failures.
+
+It caches: 4,214 read tokens per call, $0.00504 down to $0.00205. A *longer*
+prompt costing 2.5× less is the least intuitive result in this project.
+
+**Then the eval reversed the whole recommendation.** At 25 labels v3-on-Haiku
+led at 0.750 and I argued in writing against Sonnet at 0.500. At 75 labels
+Haiku is last at 0.385 held-out and Sonnet is first at 0.667. Nothing changed
+but the label count. The caveat I'd written at n=25 — support of 6, one row
+worth 0.25 of precision, only one comparison defensible — turned out to be the
+only line in that table worth anything.
+
+Reversed the recommendation and re-ran production on Sonnet. Writing the
+limitation down at the time is what made the reversal a two-line decision
+instead of an argument with myself.
+
+**Paid for the production run twice.** The first Sonnet run wrote results
+before `--model` was being recorded, so 3,000 rows carry `model: null`. The
+rerun's resume key is the `(prompt_version, model)` pair, which matched none of
+them, so it classified all 3,000 again. 6,000 calls, $21.28, 3,000 verdicts.
+
+The resume logic was correct and the data predated it. A key change is a
+migration — rows written under the old key are invisible to the new one, and
+"resume" quietly becomes "restart". Worth remembering the next time I tighten
+an identity.
+
+**The re-export was byte-identical to what was already committed.** Both blocks
+of classifications were Sonnet (the first run read the model from v3's
+frontmatter), the export dedupes on domain with later-wins, and the appended
+Sonnet rows had already won every domain. So the `(version, model)` filter
+changed a guarantee, not an output. Good outcome, but I only know it because I
+diffed rather than assumed.
+
+**Read the top of tier A one more time before shipping.** Four of the top 20 —
+`korbank.pl`, `lodz.pl`, `castle-it.net`, `e-pos.link` — are probably ISPs or
+hosts, all at confidence 0.60–0.75. That is four in twenty against a measured
+precision of 0.615, so the artifact is behaving exactly as measured rather than
+better. Raising the confidence floor to 0.75 would clear three of them and I
+didn't do it: picking a threshold after seeing which rows it removes is the
+same error as tuning a prompt after seeing its eval.
+
+Three of the four bugs I found in this project came from reading output —
+hosting providers in tier A, an IP address as a company, a CVE attached to the
+wrong product. None came from a test. Tests hold the shape; only reading tells
+you the shape is wrong.

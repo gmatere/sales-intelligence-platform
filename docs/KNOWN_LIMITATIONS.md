@@ -313,20 +313,62 @@ identify a real capability gap in the product. Both readings are true. The fix
 is more evidence — HTTP page titles, WHOIS, or a search tool — not prompt
 tuning.
 
-**[gap] A known prompt fix is deliberately unapplied.**
+**[fixed in v4] A known prompt fix was deliberately held back, then applied and
+measured.**
 `ax5z.com` carries `myra security` in its org list and every configuration
-missed it. Unlike the single-host cases the evidence was present and unused, and
-an instruction to scan the org list for security-vendor names would likely fix
-it. Not applied: changing a prompt after seeing an eval and then reporting that
-same eval turns a measurement into a fiction. It belongs in v4, against a set
-built after the change.
+missed it. Unlike the single-host cases the evidence was present and unused.
+The fix was *not* applied at the time, on the grounds that changing a prompt
+after seeing an eval and then reporting that same eval turns a measurement into
+a fiction. v4 added the org-list vendor scan and was scored against a set built
+after the change, with batch-1 and batch-2 results reported separately because
+v4's changes were written after reading v3's batch-1 failures. On held-out data
+v4 beat v3 on Haiku across precision (0.467 vs 0.385), accuracy and recall.
 
-**[risk] The stronger model scored worse on the deployment metric.**
-Sonnet 5 had the best accuracy (0.600) and the worst precision on
-`end_customer_company` (0.500), because it commits where Haiku hedges.
-Decisiveness is the wrong disposition when a wrong commitment reaches a
-salesperson. Worth flagging because the intuitive move — upgrade the model — is
-the wrong one for this metric.
+**[superseded] "The stronger model scored worse on the deployment metric."**
+At n=25 this document recorded that Sonnet 5 had the best accuracy and the
+worst precision on `end_customer_company` (0.500) "because it commits where
+Haiku hedges", and warned that the intuitive move — upgrade the model — was
+wrong for this metric.
+
+At n=75 that reverses: Sonnet leads on held-out precision at 0.667 while
+v3-Haiku is last at 0.385. The reasoning was plausible and the evidence for it
+was noise. Kept here rather than deleted, because a superseded entry that
+records *why* it was believed is more useful than a doc that only ever shows
+the conclusions that survived.
+
+**[risk] Residual false positives concentrate in small regional ISPs and
+hosting firms.**
+Reading the top 20 of tier A in the shipped artifact: `korbank.pl` (Polish ISP
+and host), `lodz.pl` (LODMAN, an academic network operator), `castle-it.net`
+(IT services) and `e-pos.link` are all probably infrastructure, at confidence
+0.60–0.75. Four in twenty is consistent with the measured 0.615 precision, so
+the artifact matches its own measurement rather than beating it.
+
+`oracleoutsourcing.com` is a different case and worth separating: Oracle is
+genuinely an end-customer company, so the class is right, but the hosts under
+an outsourcing domain likely belong to Oracle's clients, which makes the
+findings attributable to someone else. Correct classification, misleading
+evidence — a limitation of entity resolution, not of the classifier.
+
+Raising `MIN_CONFIDENCE` from 0.60 to 0.75 would clear three of the four and is
+**deliberately not done**. Choosing a threshold after seeing which rows it
+removes is the same error as tuning a prompt after seeing its eval, and the
+same error this document already calls out for the tier-A cut.
+
+**[fixed] The production run was paid for twice.**
+The first 3,000-entity Sonnet run wrote results before `--model` was recorded,
+so those rows carry `model: null`. The rerun's resume key — correctly — is the
+`(prompt_version, model)` pair, which matched none of them, so all 3,000 were
+classified again. 6,000 calls and $21.28 to produce 3,000 verdicts.
+
+The resume logic was right and the data predated it. The general lesson is that
+a key change is a migration: rows written under the old key are invisible to
+the new one, and "resume" silently becomes "restart". A one-off backfill
+stamping the known model onto the untagged rows would have avoided it.
+
+No effect on the shipped artifact. Both blocks are Sonnet — the first run read
+the model from v3's frontmatter — and the export dedupes on domain with
+later-wins, so the output was byte-identical either way.
 
 **[gap] No human-review queue is wired up.**
 Low-confidence classifications are recorded with their confidence score but
@@ -338,7 +380,7 @@ workflow does not exist.
 ## Evals
 
 **[risk] One labeller, no adjudication.**
-All 25 labels come from a single person with no second opinion and no measure
+All 75 labels come from a single person with no second opinion and no measure
 of inter-rater agreement. Where a label is wrong, the model is penalised for
 being right, and nothing in the process would surface that. Two labellers with
 disagreements adjudicated is the standard fix and was skipped for time.
@@ -354,9 +396,10 @@ evidence.
 
 **[gap] No inter-version significance testing.**
 `run_eval.py` reports deltas between configurations but no confidence interval.
-With support of 6 on the headline class, a one-row difference moves precision
-by 0.25, so the deltas invite over-reading. The report states this in prose;
-the harness should state it in arithmetic.
+With support of 18 overall and 12 on the held-out batch, a single row moves
+precision by 0.06–0.08 and the gap between the best and worst configuration is
+a handful of rows, so the deltas still invite over-reading. The report states
+this in prose; the harness should state it in arithmetic.
 
 **[gap] Prompt worked-examples are excluded, but nothing else is.**
 `build_labelled_set.py` parses the prompt files and excludes any entity used as
