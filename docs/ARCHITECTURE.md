@@ -189,9 +189,27 @@ opposite direction.
 would be reserved for per-account narrative generation on the top few hundred,
 where output quality justifies a 5× output price.
 
-**Measured, not projected.** The shipped run classified 3,000 entities on v3 /
-Sonnet 5 at **$0.00355 per call with 5,519 cached input tokens per call** —
-caching engaged for the whole run, including across a restart. The per-call
+**The rates**, so every figure below can be checked rather than taken on trust.
+Per million tokens; cache reads bill at a tenth of the input rate, cache writes
+at 1.25×:
+
+| Model | Input | Output | Cache read |
+|---|---:|---:|---:|
+| Sonnet 5 | $2.00 | $10.00 | $0.20 |
+| Haiku 4.5 | $1.00 | $5.00 | $0.10 |
+
+The shipped run averages 6,470 cached input tokens, 400 fresh, 159 output. So:
+
+```
+(6,470 × $0.20  +  400 × $2.00  +  159 × $10.00) / 1e6  =  $0.00368
+```
+
+which is the mean the traces record, to five decimal places. Note where the
+money goes: output is 159 tokens and 43% of the cost, while 6,470 cached input
+tokens are 35%. That is why the `reasoning` field is capped at twenty words.
+
+**Measured, not projected.** The shipped run classified 3,000 entities at that
+rate with caching engaged throughout, including across a restart. The per-call
 figures below are from trace data, not arithmetic:
 
 | Config | $/call | Cached tokens/call | 43,577 entities |

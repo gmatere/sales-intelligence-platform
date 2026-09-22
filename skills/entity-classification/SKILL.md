@@ -112,9 +112,27 @@ Truncate list fields to twelve items before rendering. An entity with two
 hundred technologies otherwise costs ten times one with five, for no extra
 signal.
 
+One row, as it reaches the prompt:
+
+```json
+{
+  "entity_domain": "acme-industrial.com",
+  "orgs_seen": ["amazon technologies inc"],
+  "primary_country": "DE",
+  "n_hosts": 6,
+  "n_ports": 4,
+  "n_products": 5,
+  "products": ["nginx", "OpenSSH", "Postfix"],
+  "technologies": ["WordPress", "Google Analytics"],
+  "waf_vendors": [],
+  "cloud_host_ratio": 1.0
+}
+```
+
 ## Outputs
 
-A tool call against a fixed schema, never free text:
+A tool call against a fixed schema, never free text. The verdict for the row
+above:
 
 ```json
 {
@@ -124,6 +142,11 @@ A tool call against a fixed schema, never free text:
   "reasoning": "Ordinary business name, coherent single-tenant stack, org names AWS only."
 }
 ```
+
+Note what carried the decision: `cloud_host_ratio` is 1.0 and the only org is
+Amazon, yet this is a company. Hosting on AWS makes an entity Amazon's
+*customer*, not Amazon — the estate's shape and the domain name decide it. That
+distinction is the whole reason this step exists.
 
 One of `end_customer_company`, `hosting_or_cloud`, `cdn_or_security_vendor`,
 `isp_telco`, `government_or_education`, `unknown`.

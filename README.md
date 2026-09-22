@@ -160,6 +160,7 @@ python3.11 -m venv .venv && .venv/bin/pip install -r requirements.txt
 run on a disposable instance rather than a laptop:
 
 ```bash
+export ANTHROPIC_API_KEY=sk-ant-...                    # read by the SDK
 pip install -r ingest/requirements.txt
 python ingest/ingest.py shodan.json.zst ./parquet     # ~40 min, resumable
 python ingest/validate.py ./parquet                    # profile the output
