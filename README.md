@@ -32,7 +32,7 @@ A rep-facing list answering three questions per account — **why this account**
 **why now**, **what do I say** — filterable by territory, segment, estate size,
 urgency, and whether an incumbent security vendor is already present.
 
-From 8,914,693 records: 252,078 entities, 3,000 classified, **971 confirmed
+From 8,914,693 records: 252,078 entities, 3,000 classified, **972 confirmed
 organisations**, none of them infrastructure.
 
 ## Architecture
@@ -193,7 +193,7 @@ small enough to produce a confidently wrong ranking and did. At 75 the ordering
 is more trustworthy, not settled — the gap between the top two configurations
 is a couple of rows.
 
-**Tier A holds 787 accounts, which is not a call list.** The queue is already
+**Tier A holds 779 accounts, which is not a call list.** The queue is already
 filtered to entities with a finding, so urgency is high for nearly everything
 that survives and the threshold stops discriminating. Documented rather than
 retuned: adjusting a threshold after seeing the distribution, to produce a

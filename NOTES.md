@@ -180,12 +180,37 @@ migration — rows written under the old key are invisible to the new one, and
 "resume" quietly becomes "restart". Worth remembering the next time I tighten
 an identity.
 
-**The re-export was byte-identical to what was already committed.** Both blocks
-of classifications were Sonnet (the first run read the model from v3's
-frontmatter), the export dedupes on domain with later-wins, and the appended
-Sonnet rows had already won every domain. So the `(version, model)` filter
-changed a guarantee, not an output. Good outcome, but I only know it because I
-diffed rather than assumed.
+**I concluded the re-export changed nothing, and that was wrong.** The file I
+compared was byte-identical to the committed one, so I reasoned that both
+blocks were Sonnet, later-wins had already picked the same rows, and the
+`(version, model)` filter had changed a guarantee rather than an output.
+
+The first half was right and the conclusion was not. The processing box had
+never pulled the export fix, so the command I thought had re-exported had in
+fact not run the new code at all — the file on disk was still the *first* run's
+output, which is why it matched. Once the fix was actually present, the same
+command produced different verdicts on 136 of 3,000 entities and moved 96
+tiers.
+
+Byte-identical output is weak evidence that two code paths agree. It is much
+stronger evidence that one of them did not run. I checked the artifact and
+forgot to check that the thing producing it was the thing I had written.
+
+**Which handed me a measurement I had been planning to ask for.** The two
+blocks are independent runs of the same prompt on the same model over the same
+3,000 entities, so the disagreement between them *is* run-to-run
+self-consistency: 95.5% on class, 96 tier changes, mean confidence movement of
+0.023.
+
+That 4.5% flip rate is the floor under every eval number in this project. The
+gap between the best and worst configuration at n=75 is a couple of rows out of
+12 on the held-out batch — the same order as the noise a single model has
+against itself. It does not make the ranking wrong, but it means "v3-Sonnet
+beats v2-Haiku by 0.167" is a statement about one sample, not a property of the
+models.
+
+Two accidents in a row — the double-billed run and a stale checkout — produced
+better evidence about eval reliability than the eval did.
 
 **Read the top of tier A one more time before shipping.** Four of the top 20 —
 `korbank.pl`, `lodz.pl`, `castle-it.net`, `e-pos.link` — are probably ISPs or

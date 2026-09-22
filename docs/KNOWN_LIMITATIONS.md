@@ -366,9 +366,38 @@ a key change is a migration: rows written under the old key are invisible to
 the new one, and "resume" silently becomes "restart". A one-off backfill
 stamping the known model onto the untagged rows would have avoided it.
 
-No effect on the shipped artifact. Both blocks are Sonnet — the first run read
-the model from v3's frontmatter — and the export dedupes on domain with
-later-wins, so the output was byte-identical either way.
+Both blocks are Sonnet — the first run read the model from v3's frontmatter —
+so the shipped configuration was never in doubt. Which block's *verdicts* ship
+was: the filter selects the tagged run, and the two runs disagree on 136 of
+3,000 entities. The artifact now ships the run whose traces exist and which is
+attributable to a named configuration, which is the whole point of the filter.
+
+**[measured] The same prompt and model disagree with themselves on 4.5% of
+entities.**
+The double-billed run above left two independent classifications of the same
+3,000 entities under the same prompt and the same model, which makes the
+disagreement between them a direct measurement of run-to-run consistency:
+
+| | |
+|---|---:|
+| Class agrees | 2,864 (95.5%) |
+| Class flips | 136 (4.5%) |
+| Tier changes | 96 |
+| Mean absolute confidence movement | 0.023 |
+
+The flips are not uniformly harmful — 25 move `unknown` to
+`end_customer_company` and 19 move `hosting_or_cloud` to `unknown` — but they
+are not noise-free either: 19 move `end_customer_company` to `unknown`, losing
+real prospects, and 4 move `hosting_or_cloud` to `end_customer_company`, which
+is the failure that reaches a rep.
+
+**This is the floor under every number in `evals/RESULTS.md`.** Support on the
+held-out batch is 12, so one row moves precision by 0.083, and the gap between
+the best and worst configuration is a few rows — the same order as a single
+model's disagreement with itself. The ranking is still the best available
+evidence; it is not a stable property of the models. Reporting a
+seed-controlled or repeated-run confidence interval is the correct fix and is
+not implemented.
 
 **[gap] No human-review queue is wired up.**
 Low-confidence classifications are recorded with their confidence score but
@@ -418,8 +447,8 @@ reading output, not a number.
 ## Application
 
 **[risk] Tier A is too large to be a call list.**
-Of 3,000 classified entities, 971 were confirmed organisations and **787 of
-those — 81% — landed in tier A**. The cause is structural rather than a bad
+Of 3,000 classified entities, 972 were confirmed organisations and **779 of
+those — 80% — landed in tier A**. The cause is structural rather than a bad
 threshold: the model queue is already filtered to entities carrying at least
 one security signal, so by the time scoring runs, intent is high for almost
 everything that survives. `intent_score >= 50` no longer discriminates.

@@ -92,6 +92,39 @@ often.
 
 ---
 
+## How much of this is noise: measured, not argued
+
+The production run was accidentally executed twice — 3,000 entities, same
+prompt, same model, two independent passes. That makes the disagreement between
+them a direct measurement of how much of any eval delta is the model
+disagreeing with itself:
+
+| | |
+|---|---:|
+| Class agrees across runs | 2,864 of 3,000 (**95.5%**) |
+| Class flips | 136 (**4.5%**) |
+| Tier changes | 96 |
+| Mean absolute confidence movement | 0.023 |
+
+**Put that next to the headline table.** Held-out support on
+`end_customer_company` is 12, so a single row moves precision by 0.083. The gap
+between v3-Sonnet (0.667) and v2-Haiku (0.500) is two rows. A model that
+reclassifies 4.5% of entities when asked the same question twice can move two
+rows out of twelve on its own.
+
+This does not overturn the ranking — it is still the best evidence available,
+and Sonnet's advantage shows up consistently across precision, false-positive
+count and `isp_telco` precision rather than in one metric. But it does mean the
+honest claim is "Sonnet measured better on this sample" rather than "Sonnet is
+better by 0.167".
+
+The proper fix is repeated runs per configuration with an interval reported
+rather than a point estimate. Not implemented — and worth noting that this
+measurement came from an accident rather than from the harness, which is itself
+a gap in the harness.
+
+---
+
 ## What does not hold up, even now
 
 **`unknown` is massively over-predicted.** Only 2 of 75 entities are genuinely
