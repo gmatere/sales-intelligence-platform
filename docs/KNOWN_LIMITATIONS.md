@@ -208,7 +208,35 @@ country list is retained alongside it so territory filtering can use either.
 
 ## LLM layer
 
-**[diagnosed, not fixed] Prompt caching does not engage on the shipped prompt.**
+**[fixed in v4] Prompt caching now engages on Haiku 4.5.**
+v4's cacheable prefix measures 4,580 against the 4,096 floor and caches —
+observed as a write on a cold call and reads on the two following it, with
+input dropping from 4,492 to 513. Projected cost falls from $0.00518 to roughly
+$0.00155 per call.
+
+Whether v4 should actually ship depends on the eval, not the cost: it is a
+different prompt, and its accuracy is measured against the held-out labelling
+batch rather than assumed. The caching gain is a reason to *consider* v4, not a
+reason to adopt it.
+
+**[historical] Four attempts to diagnose this all failed the same way.**
+The account below is kept because the failure mode generalises well beyond
+caching.
+
+The floor applies to the cacheable prefix — tools plus system, everything
+before the breakpoint — not to total input, and not to anything computable from
+character counts. Every attempt derived the prefix instead of observing it:
+first from chars-per-token, then from subtracting an estimated message size
+from an observed total, then from a purpose-built measuring script that
+subtracted a token count of the message from a token count of the request. That
+last one over-reported by ~315 tokens, enough to report v3's prefix as 86
+*above* a floor it was ~230 *below*.
+
+Each estimate was within about 5% and each landed on the wrong side of a hard
+cutoff. `cache_creation_input_tokens` on a cold call reports the block exactly
+and costs a fraction of a cent. See `docs/DECISIONS.md` D12e.
+
+**[superseded] Prompt caching does not engage on the shipped prompt.**
 `cache_control` is placed correctly — the identical code caches on Sonnet 5 —
 but the v3 cacheable prefix on Haiku 4.5 measures around **4,062 tokens against
 a 4,096 minimum**. Roughly 34 tokens short.

@@ -1,13 +1,18 @@
 #!/usr/bin/env python3
-"""Measure the exact cacheable prefix of a prompt version.
+"""Report whether a prompt's cacheable prefix clears the model's floor.
 
-The cache threshold applies to the prefix before the breakpoint — tools plus
-system — and nothing else. Every previous attempt to check that against the
-floor used a chars-per-token estimate or a subtraction from observed totals,
-and both were wrong by enough to matter against a hard cutoff.
+Makes one real call and reads the answer, rather than computing it.
 
-`count_tokens` reports it exactly and costs nothing. Use this rather than
-arithmetic before claiming a prompt will or will not cache.
+An earlier version of this script estimated the prefix by subtracting a
+token count of the message from a count of the whole request. That
+over-reported by ~315 tokens — enough to declare a prompt 86 tokens *above* a
+floor it was actually ~230 tokens below. Three separate attempts to reason
+about this threshold went wrong the same way: every one computed a number
+instead of observing one.
+
+`cache_creation_input_tokens` on a cold call is the cacheable block, exactly,
+as the API accounts for it. Nothing else is authoritative. A call costs a
+fraction of a cent, which is less than the cost of being wrong about it again.
 
 Usage:
     python measure_prefix.py [prompt_version] [model_override]
@@ -22,8 +27,8 @@ import anthropic
 from classify import TOOL, load_prompt, render
 from tracing import cache_floor
 
-# A deliberately tiny user message: we want the prefix, and anything in the
-# message inflates the total without contributing to the cached block.
+# Minimal message: we want the prefix, and message content sits after the
+# breakpoint where it contributes nothing to the cached block.
 MINIMAL = {k: "x" for k in (
     "entity_domain", "orgs_seen", "primary_country", "n_hosts", "n_ports",
     "n_products", "products", "technologies", "waf_vendors", "cloud_host_ratio")}
@@ -36,43 +41,46 @@ def main() -> None:
         model = sys.argv[2]
 
     client = anthropic.Anthropic()
-    user = render(template, MINIMAL)
-
-    # Two counts: with the prefix, and with a stub system block. The difference
-    # isolates tools + system from the message and the request scaffolding.
-    full = client.messages.count_tokens(
-        model=model,
-        system=[{"type": "text", "text": system}],
-        tools=[TOOL],
-        messages=[{"role": "user", "content": user}],
-    ).input_tokens
-
-    bare = client.messages.count_tokens(
-        model=model,
-        system=[{"type": "text", "text": "x"}],
-        messages=[{"role": "user", "content": user}],
-    ).input_tokens
-
-    prefix = full - bare
     floor = cache_floor(model)
-    margin = prefix - floor
+
+    # max_tokens is 1 because the response is irrelevant — we only want the
+    # usage accounting, and generation is the expensive half.
+    usage = client.messages.create(
+        model=model,
+        max_tokens=1,
+        system=[{"type": "text", "text": system,
+                 "cache_control": {"type": "ephemeral"}}],
+        tools=[TOOL],
+        messages=[{"role": "user", "content": render(template, MINIMAL)}],
+    ).usage.model_dump()
+
+    written = usage.get("cache_creation_input_tokens", 0) or 0
+    read = usage.get("cache_read_input_tokens", 0) or 0
+    fresh = usage.get("input_tokens", 0) or 0
+    prefix = written or read
 
     print(f"prompt version   : {version}")
     print(f"model            : {model}")
-    print(f"total w/ message : {full:,}")
-    print(f"message + frame  : {bare:,}")
-    print(f"cacheable prefix : {prefix:,}")
     print(f"floor            : {floor:,}")
-    print(f"margin           : {margin:+,}")
+    print(f"cacheable prefix : {prefix:,}" if prefix else
+          f"cacheable prefix : none — block rejected")
+    print(f"uncached input   : {fresh:,}")
     print()
-    if margin >= 0:
-        print("Above the floor — this prompt should cache. Confirm against "
-              "cache_creation_input_tokens on a real call; a count is a "
-              "prediction, an observed write is proof.")
+
+    if prefix:
+        print(f"CACHES. Prefix clears the floor by {prefix - floor:+,} tokens, "
+              f"observed rather than estimated.")
+        if prefix - floor < 200:
+            print(f"Margin is thin. Tokenisation varies between models and "
+                  f"shifts with any prompt edit, so a prefix this close to the "
+                  f"floor can silently drop under it.")
     else:
-        print(f"Below the floor by {abs(margin):,} tokens — cache_control will "
-              f"be ignored silently, with no error and no warning. Add at least "
-              f"{abs(margin):,} tokens to the system block to clear it.")
+        print(f"DOES NOT CACHE. The whole prompt was billed as fresh input "
+              f"({fresh:,} tokens), so `cache_control` was ignored.")
+        print(f"The block is somewhere below {floor:,}; the API does not report "
+              f"the size of a block it rejected. Add content and re-run until "
+              f"this reports a write — bisecting with probe_cache_floor.py is "
+              f"faster than guessing how much to add.")
 
 
 if __name__ == "__main__":

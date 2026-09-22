@@ -344,7 +344,41 @@ tuned toward the same bias, and the eval confirms the model layer should be too.
 
 ---
 
-## D12d — The cache floor was correct; the measurement of our own prompt was not
+## D12e — Fixed in v4, and the fix was found by measuring rather than reasoning
+
+**Resolved and applied.** v4 caches on Haiku 4.5. Observed, not predicted:
+write of 4,580 on a cold call, reads of 4,580 on the two following it, input
+collapsing from 4,492 to 513.
+
+**The diagnosis in D12d was right in substance and wrong in its number.** It
+claimed v3's prefix was ~34 tokens short of 4,096. The real figure is closer to
+**230 short** — v3's block measures around 3,867, which sits almost exactly on
+the refusal boundary the probe found independently at ~3,875.
+
+**How the wrong number arose is the part worth keeping.** I built
+`measure_prefix.py` specifically to stop estimating, then estimated inside it:
+it counted tokens for the whole request, subtracted a count of the message, and
+called the difference the prefix. On v4 that method reported 4,895 where the
+API's actual cached block was 4,580 — over-reporting by ~315 tokens. Applied to
+v3 it reported 4,182, i.e. *86 tokens above* a floor the prompt was ~230 tokens
+below.
+
+So the tool built to end the estimating was wrong in the same direction, by
+about the same margin, for the fourth time in a row.
+
+**The fix, finally.** `measure_prefix.py` now makes one real call with
+`cache_control` set and reports `cache_creation_input_tokens`. That value is the
+cacheable block exactly, as the API accounts for it. A call costs a fraction of
+a cent — less than being wrong about it again.
+
+**Standing lesson.** Where a threshold is hard, do not compute the quantity —
+observe it. Four attempts here failed identically: each derived a number that
+was close enough to sound right and wrong enough to land on the wrong side of a
+cutoff. The observation was always one API call away.
+
+---
+
+## D12d — Superseded: the prefix estimate that was itself an estimate
 
 **Resolved.** Three iterations assumed the documented minimum was wrong. It was
 not. Our cacheable prefix was roughly **34 tokens short of 4,096**, and a
