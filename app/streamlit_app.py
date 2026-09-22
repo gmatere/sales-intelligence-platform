@@ -82,8 +82,27 @@ TONES = ["Urgent / technical", "Consultative / executive"]
 st.set_page_config(page_title="Sales Intelligence", page_icon="◆", layout="wide")
 
 
+def data_fingerprint() -> tuple[int, int]:
+    """Size and mtime of the serving artifact, as a cache key."""
+    stat = DATA.stat()
+    return stat.st_size, stat.st_mtime_ns
+
+
 @st.cache_data
-def load() -> pd.DataFrame:
+def load(fingerprint: tuple[int, int]) -> pd.DataFrame:
+    """Read the curated Parquet, re-reading it whenever the file changes.
+
+    `fingerprint` is unused in the body and is the entire point: it puts the
+    file's identity into the cache key. Without it `st.cache_data` keys on the
+    function alone, so a long-running process keeps serving the DataFrame it
+    read at startup even after the Parquet underneath is replaced.
+
+    That is not hypothetical. Replacing the artifact under a process started
+    four days earlier left the app rendering the previous export while the code
+    had already hot-reloaded — new columns absent, no error, and the only
+    symptom a diagnostic panel correctly reporting that the data it wanted was
+    missing.
+    """
     return pd.read_parquet(DATA)
 
 
@@ -423,10 +442,14 @@ def trace_drawer(row) -> None:
         cached = row.get("class_cached_tokens") or 0
         tokens_in = row.get("class_input_tokens") or 0
         tokens_out = row.get("class_output_tokens") or 0
+        # input_tokens excludes cache reads, so the two are additive. Printing
+        # them as "367 in (5,541 cached)" reads as though the second is a
+        # subset of the first, which inverts the scale of what caching did.
         st.caption(
             f"**Task** entity_classification  ·  **Decision** {row.entity_class} "
             f"at confidence {row.class_confidence:.2f}  ·  **Tokens** "
-            f"{int(tokens_in):,} in ({int(cached):,} served from cache), "
+            f"{int(tokens_in) + int(cached):,} in "
+            f"({int(cached):,} from cache + {int(tokens_in):,} fresh), "
             f"{int(tokens_out):,} out")
 
         if cached and pd.notna(cost):
@@ -442,7 +465,7 @@ def trace_drawer(row) -> None:
         )
 
 
-df = load()
+df = load(data_fingerprint())
 
 # ---------------------------------------------------------------- sidebar
 st.sidebar.title("Filters")
