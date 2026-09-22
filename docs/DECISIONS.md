@@ -154,14 +154,15 @@ at least one security finding.
    43,577  queued                   (signal filter removed 83,464)
 ```
 
-The denylist removes 125,037 entities; the signal filter removes a further
-83,464. An entity with no findings is not a prospect whether or not it is a
+The rule tier removes 125,037 entities — five families, of which the provider
+denylist is one — and the signal filter removes a further 83,464. An entity with no findings is not a prospect whether or not it is a
 real company, so classifying it buys nothing. That filter is a boolean on an
 aggregate — the alternative is a model call.
 
 **Consequence.** Naive processing (a model call per source record) would cost
-roughly $17,800 per pass. The designed path costs low tens of dollars: a
-reduction of ~740×, driven mostly by a WHERE clause.
+roughly $17,800 per pass. The designed path measures **$161** on-demand and
+**~$80** batched — a reduction of 110× to 220×, driven mostly by a WHERE
+clause.
 
 ---
 
@@ -501,10 +502,11 @@ trusted to a WHERE clause.
 
 ## D15 — Ship at the cost ceiling rather than under it, with a named fallback
 
-**Decision.** Ship v3 on Sonnet 5 at a measured **$0.00355 per call**, which
-puts a full 43,577-entity refresh at **~$155** against a stated ceiling of
-$150. Do not switch to a cheaper configuration to get under the line. Record
-v4 on Haiku ($89 per refresh) as the fallback if cost becomes binding.
+**Decision.** Ship v4 on Sonnet 5 at a measured **$0.00368 per call**, which
+puts a full 43,577-entity refresh at **~$161** against a stated ceiling of
+$150. Do not switch to a cheaper configuration to get under the line. Run the
+queue on the **Batch API** — 50% of standard rates with caching still applied,
+so ~$80 — which brings it comfortably under without touching accuracy.
 
 **Why.** The configuration was chosen on precision, and precision on
 `end_customer_company` is the metric that decides whether a rep trusts the
@@ -517,14 +519,17 @@ The measured figures, from trace data rather than arithmetic:
 | Config | $/call | Cached tokens/call | 43,577 entities |
 |---|---:|---:|---:|
 | v3 · Haiku 4.5 | $0.00504 | 0 — below the floor | $220 |
-| v3 · Sonnet 5 *(shipped)* | $0.00355 | 5,519 | **$155** |
+| **v4 · Sonnet 5** *(shipped)* | $0.00368 | 6,470 | **$161** |
+| v3 · Sonnet 5 | $0.00355 | 5,519 | $155 |
 | v4 · Haiku 4.5 | $0.00205 | 4,214 | $89 |
+| v4 · Sonnet 5, batched | $0.00184 | 6,470 | **$80** |
 
 **The ordering is the finding.** The shipped Sonnet configuration is cheaper
 per call than *uncached Haiku*, despite a much higher list price. Caching
-dominates model choice at this prompt size, which also means the original $57
-estimate was not conservative-but-safe — it was a different configuration's
-price applied to a decision that had not been made yet.
+dominates model choice at this prompt size. It also means the original $57
+estimate was never achievable: it implies $0.00131 per call, below every
+configuration measured here, and the document carrying it recorded no per-call
+figure to check it against.
 
 **Consequence.** The ceiling now binds rather than providing headroom, and the
 documented breach behaviour — degrade to rules-only tiering, queue the
