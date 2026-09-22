@@ -53,9 +53,9 @@ truncated shard was sitting on disk while the comment said it could not exist.
 
 ---
 
-## The two bugs that mattered, and how they were found
+## The bugs that mattered, and how they were found
 
-Neither was found by testing.
+None was found by testing.
 
 **Tier A filled with hosting providers.** I queried the top twenty accounts.
 Eighteen were hosting companies and one was a reverse-DNS zone, every one
@@ -70,8 +70,22 @@ in a sampled eval set. Certificates can be issued to a bare address and my
 certificate fallback accepted them. No test caught it because no test could:
 the value is a valid, non-null, correctly-typed string.
 
-The pattern is the same both times. Schema tests verify that data has the right
-shape. They cannot tell you the shape is describing the wrong thing.
+**A generated email asserted a false technical claim.** "Apache httpd ...
+associated with CVE-2015-0235" — GHOST is a glibc bug, not an Apache one. The
+cause was two independent `arg_max` aggregations: the product with the highest
+EPSS and the CVE with the highest EPSS, picked separately and then printed in
+one sentence as though related. Every value was correct; the sentence was not.
+Fixed by not asserting the product alongside the CVE at all.
+
+**And a fourth, found the same way, after the app was already live.** Rendering
+720 drafts to check the new tone controls surfaced EPSS of 0.9997 printing as
+"100% chance of exploitation" — a certainty claim in a cold email, undoing the
+hedging the rest of the copy is built around.
+
+The pattern is the same every time. Schema tests verify that data has the right
+shape. They cannot tell you the shape is describing the wrong thing — and three
+of these four were only visible by reading the thing a human would actually
+receive.
 
 ---
 
@@ -116,14 +130,27 @@ urgency threshold stopped discriminating. But adjusting a threshold after
 seeing the distribution, to produce a nicer-looking split, is the same error as
 tuning a prompt after reading its eval. It is documented instead.
 
-**I did not apply a known prompt fix.** `ax5z.com` has `myra security` in its
-organisation list and every configuration missed it. An instruction to scan
-that field for vendor names would likely fix it. Applying it and then reporting
-the same eval would turn a measurement into a fiction. It belongs in v4,
-against a set built afterwards.
+**I did not apply a known prompt fix — until there was a clean set to measure
+it against.** `ax5z.com` has `myra security` in its organisation list and every
+configuration missed it. An instruction to scan that field for vendor names
+would likely fix it, but applying it and then reporting the same eval would
+turn a measurement into a fiction.
 
-**I stopped investigating the caching failure once it stopped mattering.** The
-whole question was worth about $4 on the volume actually being run. I wrote the
-diagnostic script, recorded what was known, and moved on. The method —
-instrument, measure, isolate with a minimal reproduction, stop when the answer
-is economically irrelevant — is the part worth keeping.
+So it waited. When I tripled the labelled set, the objection evaporated: v4
+carries the fix, and it is scored on a batch built after the change, reported
+separately from the batch its wording was derived from. Held-out precision went
+0.385 to 0.467 and recall 0.444 to 0.611. The discipline cost nothing in the
+end — it just moved the work to the point where the number meant something.
+
+**I stopped investigating the caching failure, and then restarted it for the
+wrong reason.** I wrote it up as economically irrelevant — about $4 at the
+volume being run — and moved on. That was defensible arithmetic and the wrong
+call, because the cost of *not* knowing was not $4. It was that I could not say
+whether the shipped configuration cached, and the answer turned out to be worth
+2.5× per call.
+
+What settled it was measuring instead of reasoning: one real API call, reading
+`cache_creation_input_tokens` back off the response. Four prior attempts had all
+inferred the prefix length from a chars-per-token estimate that ran about 5%
+high — invisible against a gradient, decisive against a hard cutoff. Three
+rounds of argument that a two-minute probe ended.
