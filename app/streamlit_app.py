@@ -292,9 +292,9 @@ def _cold_email(brief: Brief) -> str:
     subject = (f"Subject: {lead} on {row.entity_domain}" if technical
                else f"Subject: Quick note on {row.company}'s external exposure")
 
-    parts = [subject, ""]
-    parts.append(f"Hi — we track internet-facing exposure across "
-                 f"{row.primary_country_name}.")
+    parts = [subject,
+             f"Hi — we track internet-facing exposure across "
+             f"{row.primary_country_name}."]
     parts += [p for p in (seen, risk) if p]
     parts.append("Happy to walk through the detail on a short call if useful."
                  if technical else
@@ -536,7 +536,9 @@ st.download_button(
 st.divider()
 choice = st.selectbox("Account detail", view.entity_domain.tolist(),
                       format_func=lambda d: f"{view.set_index('entity_domain').loc[d, 'company']}  ·  {d}")
-row = view.set_index("entity_domain").loc[choice]
+# drop=False keeps entity_domain addressable as a field as well as the index:
+# the outreach templates and the trace drawer both read it off the row.
+row = view.set_index("entity_domain", drop=False).loc[choice]
 signals = signal_rows(row)
 
 st.header(row.company)
@@ -562,9 +564,9 @@ with left:
 
     st.subheader("What to say")
     f1, f2 = st.columns(2)
-    fmt = f1.selectbox("Format", FORMATS,
+    fmt = f1.selectbox("Format", FORMATS, index=0, key="outreach_format",
                        help="Length and structure change; the findings do not.")
-    tone = f2.selectbox("Tone", TONES,
+    tone = f2.selectbox("Tone", TONES, index=0, key="outreach_tone",
                         help="Technical names the protocols and probabilities. "
                              "Executive leads on business consequence.")
 
