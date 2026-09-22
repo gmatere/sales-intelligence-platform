@@ -296,11 +296,35 @@ fit so a partial run covers the entities most likely to be real companies, but
 everything below the cut stays `U - unclassified` and never reaches a rep.
 Production would run the full queue on a batch endpoint overnight.
 
-**[measured] Classification precision is 0.615 on the class that matters.**
-v3 on Sonnet 5, against 75 hand-labelled entities: accuracy 0.667, precision on
-`end_customer_company` 0.615 overall and 0.667 on the held-out batch, recall
-0.444. Five false positives would have reached a rep's call list. Full analysis
+**[measured] Classification precision is 0.765 on the class that matters.**
+v4 on Sonnet 5, against 75 hand-labelled entities: accuracy 0.773, precision on
+`end_customer_company` 0.765 overall and 0.727 on the held-out batch, recall
+0.722. Four false positives would have reached a rep's call list, and two of
+those four — `3cx.ae` and `digitalags.net` — are entries this document already
+flags as probably mislabelled, so the true figure may be higher. Full analysis
 in `evals/RESULTS.md`.
+
+**[fixed] An out-of-enum class silently removed a school from the market.**
+`Classification.entity_class` was typed `str`. The permitted values existed
+only in the tool schema's `enum`, which is advisory without `strict: true`, so
+Pydantic accepted whatever came back. One call in 3,000 returned `education`
+instead of `government_or_education` — `colegioanglomorumbi.com.br`, a
+Brazilian school, correctly named, at confidence 0.9.
+
+The tier logic matches class names exactly, so an unrecognised value falls
+through to `X - not a prospect`. A high-confidence, correctly identified
+prospect was dropped with nothing recording it. Rate: 1 in 3,000, which is
+small enough to never notice and large enough to matter across 43,577.
+
+Two fixes, because the single point of failure was that only one layer checked:
+`entity_class` is now a `Literal`, so a stray value raises `ValidationError`
+and the existing retry loop treats it as a failed attempt; and
+`export_curated.py` refuses to export on any unrecognised class rather than
+bucketing it, with an explicit hand-checked alias map for verdicts already on
+disk.
+
+Found in a `decisions` histogram, not by a test — the same way as every other
+bug here that mattered.
 
 **[demonstrated] A 25-example eval produced a confidently wrong ranking.**
 The first version of this document reported 0.750 precision for v3-on-Haiku at
@@ -479,8 +503,8 @@ reading output, not a number.
 ## Application
 
 **[risk] Tier A is too large to be a call list.**
-Of 3,000 classified entities, 972 were confirmed organisations and **779 of
-those — 80% — landed in tier A**. The cause is structural rather than a bad
+Of 3,000 classified entities, 1,004 were confirmed organisations and **818 of
+those — 81% — landed in tier A**. The cause is structural rather than a bad
 threshold: the model queue is already filtered to entities carrying at least
 one security signal, so by the time scoring runs, intent is high for almost
 everything that survives. `intent_score >= 50` no longer discriminates.

@@ -46,6 +46,22 @@ PROSPECT_CLASSES = ("end_customer_company", "government_or_education")
 # "company" is exactly the input that puts a datacenter in a call list.
 MIN_CONFIDENCE = 0.60
 
+VALID_CLASSES = {
+    "end_customer_company", "government_or_education", "hosting_or_cloud",
+    "isp_telco", "cdn_or_security_vendor", "unknown",
+}
+
+# Observed schema drift, corrected explicitly rather than silently. One call in
+# 3,000 returned `education` for a Brazilian school at confidence 0.9. Because
+# the tier CASE matches class names exactly, an unrecognised class falls through
+# to 'X - not a prospect' — so a correctly identified school was removed from
+# the market with nothing recording it.
+#
+# The root cause is fixed upstream: `Classification.entity_class` is now a
+# Literal, so a stray value raises and is retried. This map exists for verdicts
+# already on disk, and each entry is a hand-checked judgement, not a guess.
+CLASS_ALIASES = {"education": "government_or_education"}
+
 
 def load_classifications(conn, version: str, model: str) -> int:
     """Load verdicts from exactly one (prompt version, model) configuration.
@@ -72,6 +88,26 @@ def load_classifications(conn, version: str, model: str) -> int:
             continue
         # Later lines win: the file is append-only, so file order is run order.
         kept[r["entity_domain"]] = r
+
+    # Fail loudly on a class the tier logic cannot interpret. Silently bucketing
+    # it as 'not a prospect' is how a confirmed school disappeared.
+    unmapped = {}
+    for domain, r in kept.items():
+        cls = r["entity_class"]
+        if cls in VALID_CLASSES:
+            continue
+        if cls in CLASS_ALIASES:
+            print(f"  aliasing {cls!r} -> {CLASS_ALIASES[cls]!r} for {domain}")
+            r["entity_class"] = CLASS_ALIASES[cls]
+            continue
+        unmapped.setdefault(cls, []).append(domain)
+
+    if unmapped:
+        print("\nunrecognised entity_class values — refusing to export:")
+        for cls, domains in unmapped.items():
+            print(f"  {cls!r}: {len(domains)} entity(ies), e.g. {domains[:3]}")
+        print("Add to CLASS_ALIASES after checking each by hand, or reclassify.")
+        sys.exit(1)
 
     if not kept:
         models = sorted({(json.loads(l).get("prompt_version"),

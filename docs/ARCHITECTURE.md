@@ -151,10 +151,11 @@ Designed
   8,914,693 records
   →   252,078 entities        aggregation
   →   127,041 unresolved      rules removed 125,037
-  →    43,577 queued          signal filter removed 83,464   ≈ $155
+  →    43,577 queued          signal filter removed 83,464   ≈ $161
 ```
 
-$155 is 43,577 × the measured $0.00355/call for the shipped configuration.
+$161 is 43,577 × the measured $0.00368/call for the shipped configuration
+(v4 on Sonnet; v3 measured $0.00355 on a slightly shorter prefix).
 
 An earlier version of this document said $57. That figure implies $0.00131 per
 call, and no configuration measured in this project has ever come in that

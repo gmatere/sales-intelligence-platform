@@ -32,7 +32,7 @@ A rep-facing list answering three questions per account — **why this account**
 **why now**, **what do I say** — filterable by territory, segment, estate size,
 urgency, and whether an incumbent security vendor is already present.
 
-From 8,914,693 records: 252,078 entities, 3,000 classified, **972 confirmed
+From 8,914,693 records: 252,078 entities, 3,000 classified, **1,004 confirmed
 organisations**, none of them infrastructure.
 
 ## Architecture
@@ -76,7 +76,7 @@ Designed —
   8,914,693 records
   →   252,078 entities      aggregation
   →   127,041 unresolved    rules removed 125,037
-  →    43,577 queued        signal filter removed 83,464    ≈ $155
+  →    43,577 queued        signal filter removed 83,464    ≈ $161
 ```
 
 The larger lever is the **signal filter**, not the rules. An entity with no
@@ -88,7 +88,7 @@ of them — `reverse_dns_zone`, `seed_list`, `cloud_tag_volume`,
 `sequential_hostnames`, `port_diversity`. The heuristics exist because a
 curated list of names cannot reach the long tail of regional hosts.
 
-That $155 is measured rather than projected — the production run's own traces —
+That $161 is measured rather than projected — the production run's own traces —
 but it is **on-demand** pricing, and the two levers that matter are both larger
 than the model choice:
 
@@ -110,30 +110,41 @@ alert.
 
 ## Measured quality
 
-v3 on Sonnet 5, against 75 hand-labelled entities:
+**v4 on Sonnet 5**, against 75 hand-labelled entities:
 
 | | |
 |---|---|
-| Precision, `end_customer_company` | **0.615** (0.667 on held-out batch) |
-| Recall | 0.444 |
-| Accuracy | 0.667 |
+| Precision, `end_customer_company` | **0.765** (0.727 on held-out batch) |
+| Recall | 0.722 |
+| Accuracy | 0.773 |
 
 Precision on that class is the metric that governs deployment: a false positive
 puts a hosting provider in a call list and the tool loses the rep's trust. A
-false negative removes a company from the market invisibly.
+false negative removes a company from the market invisibly — which is why
+recall matters too, and why it moved the shipped configuration.
 
-**The most useful thing this eval did was overturn its own earlier conclusion.**
-At 25 labels it ranked v3-on-Haiku first at 0.750 precision and argued against
-Sonnet at 0.500. At 75 labels that ordering completely inverts — Haiku falls to
-0.385 on held-out data and Sonnet leads at 0.667. Nothing changed but the
-number of labels.
+**The eval overturned its own recommendation twice, and that is the most useful
+thing in this project.**
 
-The caveat was written before the reversal: the n=25 report stated that support
-of 6 made one row worth 0.25 of precision and that only one comparison was
-defensible. That turned out to be the only reliable line in the table. The
-recommendation was reversed and the production run redone on Sonnet.
+| | Shipped at the time | What the next measurement said |
+|---|---|---|
+| n=25, three configs | v3 · Haiku, 0.750 precision | At n=75 it was **last** at 0.385 held-out |
+| n=75, four configs | v3 · Sonnet, 0.667 held-out | v4 · Sonnet reaches **0.727**, recall 0.444 → **0.722** |
 
-Full analysis, the reversal, and what still doesn't hold at n=75 in
+The first reversal came from nothing but tripling the labels. The second came
+from noticing that v4 had only ever been tested on Haiku — it was built to
+clear Haiku's cache floor, so its *content* improvements were never measured on
+the model actually shipping. They were worth 5 of 18 on recall.
+
+Both reversals were acted on: the production run was redone each time rather
+than leaving a recommendation the evidence no longer supported.
+
+**The floor under all of it:** two identical runs of the same prompt and model
+over the same 3,000 entities agree on class for only **95.5%**. Held-out
+support is 12, so one row is 0.083 of precision — the honest claim is "best
+measured so far", not "best".
+
+Full analysis, both reversals, and what still does not hold in
 [`evals/RESULTS.md`](evals/RESULTS.md).
 
 ## Running it
@@ -154,8 +165,8 @@ python ingest/ingest.py shodan.json.zst ./parquet     # ~40 min, resumable
 python ingest/validate.py ./parquet                    # profile the output
 cd dbt && DBT_PROFILES_DIR=. dbt seed && dbt build     # 38 tests
 cd ../llm && python classify.py --dry-run              # price before spending
-python classify.py --limit 3000 --prompt-version v3
-cd .. && python export_curated.py                      # serving artifact
+python classify.py --limit 3000 --prompt-version v4 --model claude-sonnet-5
+cd .. && python export_curated.py --prompt-version v4 --model claude-sonnet-5
 ```
 
 **The evals:**
@@ -163,7 +174,7 @@ cd .. && python export_curated.py                      # serving artifact
 ```bash
 python evals/build_labelled_set.py 25   # worksheet, labels blank
 python evals/merge_labels.py            # merge plain-text labels
-python evals/run_eval.py --prompt-version v3 --model claude-haiku-4-5
+python evals/run_eval.py --prompt-version v4 --model claude-sonnet-5
 ```
 
 ## Layout
@@ -207,7 +218,7 @@ small enough to produce a confidently wrong ranking and did. At 75 the ordering
 is more trustworthy, not settled — the gap between the top two configurations
 is a couple of rows.
 
-**Tier A holds 779 accounts, which is not a call list.** The queue is already
+**Tier A holds 818 accounts, which is not a call list.** The queue is already
 filtered to entities with a finding, so urgency is high for nearly everything
 that survives and the threshold stops discriminating. Documented rather than
 retuned: adjusting a threshold after seeing the distribution, to produce a

@@ -23,6 +23,7 @@ import re
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
+from typing import Literal
 
 import anthropic
 import duckdb
@@ -53,7 +54,21 @@ class Classification(BaseModel):
     parsed out of prose — an unparseable response is a failed call, not a
     silently mangled record."""
 
-    entity_class: str = Field(description="One of the six permitted classes")
+    # Literal, not str. The enum in the tool schema is advisory without
+    # `strict: true`, so a plain `str` here accepted anything the model
+    # returned. One call in 3,000 came back `education` instead of
+    # `government_or_education` — a school at confidence 0.9, which the export
+    # then dropped to 'X - not a prospect' because the class matched nothing.
+    # As a Literal it raises ValidationError instead, which the retry loop
+    # already treats as a failed attempt.
+    entity_class: Literal[
+        "end_customer_company",
+        "hosting_or_cloud",
+        "cdn_or_security_vendor",
+        "isp_telco",
+        "government_or_education",
+        "unknown",
+    ] = Field(description="One of the six permitted classes")
     canonical_name: str = Field(description="Best guess at the organisation's name")
     confidence: float = Field(ge=0.0, le=1.0)
     reasoning: str = Field(description="One sentence, citing the deciding evidence")
