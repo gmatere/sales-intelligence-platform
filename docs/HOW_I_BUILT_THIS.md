@@ -109,7 +109,7 @@ I would go and find more evidence.
 
 ## Things I chose not to do, and why
 
-**I did not retune the tier thresholds after seeing that 787 of 971 prospects
+**I did not retune the tier thresholds after seeing that 779 of 972 prospects
 landed in tier A.** That number is too high to be a call list, and the cause is
 understood — the queue is pre-filtered to entities with a finding, so the
 urgency threshold stopped discriminating. But adjusting a threshold after
