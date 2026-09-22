@@ -1,23 +1,23 @@
 {
-  "n": 25,
-  "accuracy": 0.6,
+  "n": 75,
+  "accuracy": 0.6666666666666666,
   "per_class": {
     "end_customer_company": {
-      "support": 6,
-      "tp": 2,
-      "fp": 2,
-      "fn": 4,
-      "precision": 0.5,
-      "recall": 0.3333333333333333,
-      "f1": 0.4
+      "support": 18,
+      "tp": 8,
+      "fp": 5,
+      "fn": 10,
+      "precision": 0.6153846153846154,
+      "recall": 0.4444444444444444,
+      "f1": 0.5161290322580646
     },
     "hosting_or_cloud": {
-      "support": 11,
-      "tp": 8,
-      "fp": 0,
-      "fn": 3,
-      "precision": 1.0,
-      "recall": 0.7272727272727273,
+      "support": 30,
+      "tp": 24,
+      "fp": 3,
+      "fn": 6,
+      "precision": 0.8888888888888888,
+      "recall": 0.8,
       "f1": 0.8421052631578948
     },
     "cdn_or_security_vendor": {
@@ -30,38 +30,160 @@
       "f1": 1.0
     },
     "isp_telco": {
-      "support": 5,
-      "tp": 2,
+      "support": 19,
+      "tp": 11,
       "fp": 0,
-      "fn": 3,
+      "fn": 8,
       "precision": 1.0,
-      "recall": 0.4,
-      "f1": 0.5714285714285715
+      "recall": 0.5789473684210527,
+      "f1": 0.7333333333333334
     },
     "government_or_education": {
-      "support": 2,
-      "tp": 2,
+      "support": 5,
+      "tp": 4,
       "fp": 0,
-      "fn": 0,
+      "fn": 1,
       "precision": 1.0,
-      "recall": 1.0,
-      "f1": 1.0
+      "recall": 0.8,
+      "f1": 0.888888888888889
     },
     "unknown": {
-      "support": 0,
-      "tp": 0,
-      "fp": 8,
+      "support": 2,
+      "tp": 2,
+      "fp": 17,
       "fn": 0,
-      "precision": 0.0,
-      "recall": null,
-      "f1": null
+      "precision": 0.10526315789473684,
+      "recall": 1.0,
+      "f1": 0.1904761904761905
     }
   },
   "prompt_version": "v3",
   "model": "claude-sonnet-5",
   "errors": 0,
-  "elapsed_s": 12.9,
-  "run_at": "2026-09-19T15:30:55",
+  "elapsed_s": 35.4,
+  "run_at": "2026-09-22T08:08:47",
+  "by_batch": {
+    "1": {
+      "n": 25,
+      "accuracy": 0.6,
+      "per_class": {
+        "end_customer_company": {
+          "support": 6,
+          "tp": 2,
+          "fp": 2,
+          "fn": 4,
+          "precision": 0.5,
+          "recall": 0.3333333333333333,
+          "f1": 0.4
+        },
+        "hosting_or_cloud": {
+          "support": 11,
+          "tp": 8,
+          "fp": 0,
+          "fn": 3,
+          "precision": 1.0,
+          "recall": 0.7272727272727273,
+          "f1": 0.8421052631578948
+        },
+        "cdn_or_security_vendor": {
+          "support": 1,
+          "tp": 1,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "isp_telco": {
+          "support": 5,
+          "tp": 2,
+          "fp": 0,
+          "fn": 3,
+          "precision": 1.0,
+          "recall": 0.4,
+          "f1": 0.5714285714285715
+        },
+        "government_or_education": {
+          "support": 2,
+          "tp": 2,
+          "fp": 0,
+          "fn": 0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0
+        },
+        "unknown": {
+          "support": 0,
+          "tp": 0,
+          "fp": 8,
+          "fn": 0,
+          "precision": 0.0,
+          "recall": null,
+          "f1": null
+        }
+      }
+    },
+    "2": {
+      "n": 50,
+      "accuracy": 0.7,
+      "per_class": {
+        "end_customer_company": {
+          "support": 12,
+          "tp": 6,
+          "fp": 3,
+          "fn": 6,
+          "precision": 0.6666666666666666,
+          "recall": 0.5,
+          "f1": 0.5714285714285715
+        },
+        "hosting_or_cloud": {
+          "support": 19,
+          "tp": 16,
+          "fp": 3,
+          "fn": 3,
+          "precision": 0.8421052631578947,
+          "recall": 0.8421052631578947,
+          "f1": 0.8421052631578947
+        },
+        "cdn_or_security_vendor": {
+          "support": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 0,
+          "precision": null,
+          "recall": null,
+          "f1": null
+        },
+        "isp_telco": {
+          "support": 14,
+          "tp": 9,
+          "fp": 0,
+          "fn": 5,
+          "precision": 1.0,
+          "recall": 0.6428571428571429,
+          "f1": 0.782608695652174
+        },
+        "government_or_education": {
+          "support": 3,
+          "tp": 2,
+          "fp": 0,
+          "fn": 1,
+          "precision": 1.0,
+          "recall": 0.6666666666666666,
+          "f1": 0.8
+        },
+        "unknown": {
+          "support": 2,
+          "tp": 2,
+          "fp": 9,
+          "fn": 0,
+          "precision": 0.18181818181818182,
+          "recall": 1.0,
+          "f1": 0.3076923076923077
+        }
+      }
+    }
+  },
   "details": [
     {
       "entity_domain": "gane.com.br",
@@ -69,16 +191,16 @@
       "predicted": "unknown",
       "confidence": 0.35,
       "correct": false,
-      "model_reasoning": "Single host on shared hosting provider (HostDime); domain unrecognized, insufficient evidence to identify owner.",
+      "model_reasoning": "Single host on hosting provider IP, no recognizable business signal beyond domain name.",
       "labeller_note": ""
     },
     {
       "entity_domain": "provet.in",
       "true_class": "end_customer_company",
       "predicted": "unknown",
-      "confidence": 0.35,
+      "confidence": 0.4,
       "correct": false,
-      "model_reasoning": "Single host, generic web stack (Plesk/PHP/nginx), org unrelated to domain; insufficient evidence to identify business.",
+      "model_reasoning": "Single host, generic web stack (Plesk/nginx/PHP), org is hosting provider, domain name unrecognised.",
       "labeller_note": ""
     },
     {
@@ -87,7 +209,7 @@
       "predicted": "unknown",
       "confidence": 0.3,
       "correct": false,
-      "model_reasoning": "Single host, single IP camera device; no identifying company evidence beyond domain name.",
+      "model_reasoning": "Single host running an IP camera; no identifying evidence of business type or ownership.",
       "labeller_note": ""
     },
     {
@@ -96,7 +218,7 @@
       "predicted": "unknown",
       "confidence": 0.3,
       "correct": false,
-      "model_reasoning": "Single host, single port, org differs from domain; no identifying evidence of business type.",
+      "model_reasoning": "Single host, single port, no recognisable name; org differs from domain. Insufficient evidence to classify confidently.",
       "labeller_note": ""
     },
     {
@@ -105,7 +227,7 @@
       "predicted": "unknown",
       "confidence": 0.3,
       "correct": false,
-      "model_reasoning": "Single host, single port (OpenSSH), org is just a Japanese hosting provider; insufficient evidence to identify owner.",
+      "model_reasoning": "Single host, single port, hosted on Sakura Internet; no identifying evidence of the actual organisation.",
       "labeller_note": ""
     },
     {
@@ -114,7 +236,7 @@
       "predicted": "unknown",
       "confidence": 0.3,
       "correct": false,
-      "model_reasoning": "Bare IP, no domain name, tiny estate with single FTP service; insufficient evidence to identify owner.",
+      "model_reasoning": "Bare IP, tiny estate, single FTP service, org name generic and unverifiable.",
       "labeller_note": "had to do detailed (2 step) search to get to this"
     },
     {
@@ -123,25 +245,25 @@
       "predicted": "hosting_or_cloud",
       "confidence": 0.75,
       "correct": true,
-      "model_reasoning": "Domain name itself means \"hosting\" in Russian; RU-Center is a known registrar/hosting reseller, generic nginx stack.",
+      "model_reasoning": "Domain name itself (\"nichost\") suggests hosting brand; org tied to RU-CENTER, a known Russian hosting/registrar company.",
       "labeller_note": ""
     },
     {
       "entity_domain": "jdsports.id",
       "true_class": "end_customer_company",
       "predicted": "end_customer_company",
-      "confidence": 0.78,
+      "confidence": 0.75,
       "correct": true,
-      "model_reasoning": "Domain matches recognisable retail brand JD Sports; small coherent estate (mail, HSTS) typical of a company site.",
+      "model_reasoning": "Domain matches known retail brand JD Sports Indonesia; small coherent estate with mail server, no CDN.",
       "labeller_note": ""
     },
     {
       "entity_domain": "web.com",
       "true_class": "hosting_or_cloud",
       "predicted": "hosting_or_cloud",
-      "confidence": 0.85,
+      "confidence": 0.75,
       "correct": true,
-      "model_reasoning": "Org matches domain; Web.com is a known website hosting and domain registrar provider.",
+      "model_reasoning": "Web.com Group is a known web hosting/domain registrar provider; org name matches domain.",
       "labeller_note": ""
     },
     {
@@ -150,16 +272,16 @@
       "predicted": "unknown",
       "confidence": 0.35,
       "correct": false,
-      "model_reasoning": "Small coherent stack, but org is a shared hosting reseller and domain unrecognisable; unclear if end customer or hosting client.",
+      "model_reasoning": "Small estate, cPanel/Exim typical of shared hosting tenant; org differs from domain; no clear identity signal.",
       "labeller_note": ""
     },
     {
       "entity_domain": "ultaserver.net",
       "true_class": "hosting_or_cloud",
       "predicted": "hosting_or_cloud",
-      "confidence": 0.9,
+      "confidence": 0.88,
       "correct": true,
-      "model_reasoning": "Domain matches org \"ultahost\", multiple hosting provider orgs across estate, name implies server hosting brand.",
+      "model_reasoning": "Domain matches org \"ultahost\"; multiple hosting-related orgs across blocks; classic hosting brand naming.",
       "labeller_note": ""
     },
     {
@@ -168,16 +290,16 @@
       "predicted": "hosting_or_cloud",
       "confidence": 0.75,
       "correct": true,
-      "model_reasoning": "Domain name \"rb-hosting\" signals a hosting provider; org Combell is a known Belgian hosting company.",
+      "model_reasoning": "Domain name explicitly \"hosting\", org is Combell (Belgian hosting provider), uniform nginx across many hosts.",
       "labeller_note": ""
     },
     {
       "entity_domain": "ibercsm.net",
       "true_class": "hosting_or_cloud",
       "predicted": "end_customer_company",
-      "confidence": 0.68,
+      "confidence": 0.72,
       "correct": false,
-      "model_reasoning": "Org matches domain (Ibermatica/Ayesa), small coherent estate, low port diversity, no cloud/CDN tagging.",
+      "model_reasoning": "Org matches domain (Ibermatica/Ayesa), small coherent estate, narrow port range typical of self-run IT.",
       "labeller_note": ""
     },
     {
@@ -186,16 +308,16 @@
       "predicted": "hosting_or_cloud",
       "confidence": 0.9,
       "correct": true,
-      "model_reasoning": "Domain and org names HostGator, a known VPS/shared hosting brand; estate reflects tenant infrastructure.",
+      "model_reasoning": "Domain and org both name HostGator, a known shared/VPS hosting brand; multi-tenant estate.",
       "labeller_note": ""
     },
     {
       "entity_domain": "ax5z.com",
       "true_class": "cdn_or_security_vendor",
       "predicted": "cdn_or_security_vendor",
-      "confidence": 0.75,
+      "confidence": 0.6,
       "correct": true,
-      "model_reasoning": "Orgs \"myra security\"/\"bymyra\" match a known DDoS/CDN security vendor; opaque domain, narrow uniform stack.",
+      "model_reasoning": "Org 'Myra Security'/'ByMyra' is a known German DDoS/CDN security vendor; opaque domain likely infrastructure block.",
       "labeller_note": ""
     },
     {
@@ -204,34 +326,34 @@
       "predicted": "hosting_or_cloud",
       "confidence": 0.94,
       "correct": true,
-      "model_reasoning": "Org names match domain (cyber folks s.a.), \"shared hosting\" and \"vps\" orgs, 241 hosts with generic web stack.",
+      "model_reasoning": "Org names include \"cyber folks\", \"shared hosting\", \"vps\" \u2014 Polish hosting provider with 241 hosts, generic multi-tenant stack.",
       "labeller_note": ""
     },
     {
       "entity_domain": "sarenet.es",
       "true_class": "isp_telco",
       "predicted": "isp_telco",
-      "confidence": 0.83,
+      "confidence": 0.82,
       "correct": true,
-      "model_reasoning": "Sarenet is a Basque ISP; orgs include many unrelated Basque institutions, indicating hosted customer estates.",
+      "model_reasoning": "Sarenet is a Basque ISP; orgs list many unrelated client institutions (Osakidetza, port authority), indicating hosted customers.",
       "labeller_note": ""
     },
     {
       "entity_domain": "dreamhostps.com",
       "true_class": "hosting_or_cloud",
       "predicted": "hosting_or_cloud",
-      "confidence": 0.93,
+      "confidence": 0.95,
       "correct": true,
-      "model_reasoning": "Domain and org match DreamHost; 225 hosts running varied WordPress sites is shared hosting for tenants.",
+      "model_reasoning": "Domain and org both name DreamHost; 225 hosts running WordPress on shared stack signals shared hosting tenants.",
       "labeller_note": ""
     },
     {
       "entity_domain": "libertypr.net",
       "true_class": "isp_telco",
       "predicted": "isp_telco",
-      "confidence": 0.93,
+      "confidence": 0.92,
       "correct": true,
-      "model_reasoning": "Org names match cable/telecom brand; router, DVR, CPE fingerprints across 160 hosts indicate subscriber equipment.",
+      "model_reasoning": "Cable/telecom org name matches domain; 160 hosts with router/DVR/CPE fingerprints indicate subscriber equipment.",
       "labeller_note": ""
     },
     {
@@ -240,25 +362,25 @@
       "predicted": "government_or_education",
       "confidence": 0.97,
       "correct": true,
-      "model_reasoning": ".ac.uk domain and org matches University of Edinburgh directly; classic university estate.",
+      "model_reasoning": ".ac.uk domain and org name match University of Edinburgh; coherent stack across large estate.",
       "labeller_note": ""
     },
     {
       "entity_domain": "cottontex.ro",
       "true_class": "end_customer_company",
       "predicted": "end_customer_company",
-      "confidence": 0.75,
+      "confidence": 0.8,
       "correct": true,
-      "model_reasoning": "Org name matches domain, small coherent estate (2 hosts, 2 ports), no cloud/CDN, Romanian business.",
+      "model_reasoning": "Org matches domain exactly, small coherent estate, not cloud/CDN attributed, likely Romanian textile company.",
       "labeller_note": ""
     },
     {
       "entity_domain": "pollub.pl",
       "true_class": "government_or_education",
       "predicted": "government_or_education",
-      "confidence": 0.96,
+      "confidence": 0.93,
       "correct": true,
-      "model_reasoning": "Org matches domain: Politechnika Lubelska, a Polish public university; coherent small web stack.",
+      "model_reasoning": "Org matches domain (Politechnika Lubelska), a Polish public university; coherent small web stack.",
       "labeller_note": ""
     },
     {
@@ -267,7 +389,7 @@
       "predicted": "unknown",
       "confidence": 0.3,
       "correct": false,
-      "model_reasoning": "Placeholder-like domain name, small coherent stack, but org only names an internet exchange, not identifying.",
+      "model_reasoning": "Generic placeholder-like domain, small coherent stack, but org is an internet exchange not the operator; identity unclear.",
       "labeller_note": ""
     },
     {
@@ -276,7 +398,7 @@
       "predicted": "end_customer_company",
       "confidence": 0.6,
       "correct": false,
-      "model_reasoning": "Small coherent estate, 4 hosts, 3 ports, Apache/ntpd stack; domain-matching org not evident but no reseller signs.",
+      "model_reasoning": "Small coherent estate (4 hosts, 3 ports), Canadian ISP-hosted; likely own web/mail systems, not a provider.",
       "labeller_note": ""
     },
     {
@@ -285,7 +407,457 @@
       "predicted": "hosting_or_cloud",
       "confidence": 0.75,
       "correct": true,
-      "model_reasoning": "Domain and org both reference \"cyberweb hosting\", a hosting provider brand, not an end customer.",
+      "model_reasoning": "Domain and org both signal a hosting brand (\"cyberwebserver\", \"cyberwebhosting\"); small estate but generic naming pattern.",
+      "labeller_note": ""
+    },
+    {
+      "entity_domain": "bond.style",
+      "true_class": "end_customer_company",
+      "predicted": "unknown",
+      "confidence": 0.3,
+      "correct": false,
+      "model_reasoning": "Single host, generic Apache, GMO Internet is a hosting provider; no identifying signal for actual owner.",
+      "labeller_note": ""
+    },
+    {
+      "entity_domain": "westernbid.co",
+      "true_class": "end_customer_company",
+      "predicted": "end_customer_company",
+      "confidence": 0.6,
+      "correct": true,
+      "model_reasoning": "Single host, coherent IIS stack, domain implies a distinct payment service brand, not hosting infra.",
+      "labeller_note": ""
+    },
+    {
+      "entity_domain": "tizbi.com",
+      "true_class": "end_customer_company",
+      "predicted": "unknown",
+      "confidence": 0.35,
+      "correct": false,
+      "model_reasoning": "Single host, single port, org matches domain but name unrecognized; too little evidence to identify business.",
+      "labeller_note": ""
+    },
+    {
+      "entity_domain": "levyshow.com",
+      "true_class": "end_customer_company",
+      "predicted": "end_customer_company",
+      "confidence": 0.75,
+      "correct": true,
+      "model_reasoning": "Org name matches domain exactly, single host with coherent Apache stack, no CDN/hosting signals.",
+      "labeller_note": ""
+    },
+    {
+      "entity_domain": "6-ifnl.net",
+      "true_class": "isp_telco",
+      "predicted": "isp_telco",
+      "confidence": 0.62,
+      "correct": true,
+      "model_reasoning": "Domain and org both indicate \"Independent Fibre Networks\", a UK fibre network operator name.",
+      "labeller_note": ""
+    },
+    {
+      "entity_domain": "legionhq.org",
+      "true_class": "end_customer_company",
+      "predicted": "end_customer_company",
+      "confidence": 0.55,
+      "correct": true,
+      "model_reasoning": "Single host, coherent web+mail stack, no CDN/WAF; looks like a small org running its own systems.",
+      "labeller_note": ""
+    },
+    {
+      "entity_domain": "secret-closet.com",
+      "true_class": "end_customer_company",
+      "predicted": "unknown",
+      "confidence": 0.45,
+      "correct": false,
+      "model_reasoning": "Single host, single port; org is Taiwan telecom (likely just ISP), no other identifying evidence.",
+      "labeller_note": ""
+    },
+    {
+      "entity_domain": "lambmotor.com",
+      "true_class": "end_customer_company",
+      "predicted": "end_customer_company",
+      "confidence": 0.72,
+      "correct": true,
+      "model_reasoning": "Domain suggests a car dealership; single host, small coherent stack, typical of an ordinary business website.",
+      "labeller_note": ""
+    },
+    {
+      "entity_domain": "143-14-65-2.pmtaserver.com",
+      "true_class": "unknown",
+      "predicted": "unknown",
+      "confidence": 0.3,
+      "correct": true,
+      "model_reasoning": "Reverse-DNS style hostname for a mail server IP, single host, no identifying signals of a real business.",
+      "labeller_note": "infrastructure/relay subdomain"
+    },
+    {
+      "entity_domain": "actionemb.com",
+      "true_class": "end_customer_company",
+      "predicted": "end_customer_company",
+      "confidence": 0.55,
+      "correct": true,
+      "model_reasoning": "Small single-host estate with generic Apache stack; domain suggests an embroidery business, no infra signal.",
+      "labeller_note": ""
+    },
+    {
+      "entity_domain": "pika.net.id",
+      "true_class": "isp_telco",
+      "predicted": "isp_telco",
+      "confidence": 0.72,
+      "correct": true,
+      "model_reasoning": "Org matches domain, MikroTik router devices, .net.id domain suggest a small Indonesian ISP.",
+      "labeller_note": ""
+    },
+    {
+      "entity_domain": "altovalenet.com.br",
+      "true_class": "isp_telco",
+      "predicted": "isp_telco",
+      "confidence": 0.82,
+      "correct": true,
+      "model_reasoning": "Org matches domain; MikroTik and DVR/network devices typical of a small Brazilian ISP's network gear.",
+      "labeller_note": ""
+    },
+    {
+      "entity_domain": "fluency.net.uk",
+      "true_class": "isp_telco",
+      "predicted": "isp_telco",
+      "confidence": 0.62,
+      "correct": true,
+      "model_reasoning": "Org \"fluency communications\" plus \"10g transit link\" suggests a network/connectivity provider, not a single company.",
+      "labeller_note": ""
+    },
+    {
+      "entity_domain": "isptec.com.br",
+      "true_class": "isp_telco",
+      "predicted": "isp_telco",
+      "confidence": 0.75,
+      "correct": true,
+      "model_reasoning": "Domain name and MikroTik router fingerprints indicate a small Brazilian ISP running subscriber network equipment.",
+      "labeller_note": ""
+    },
+    {
+      "entity_domain": "digitalags.net",
+      "true_class": "isp_telco",
+      "predicted": "end_customer_company",
+      "confidence": 0.55,
+      "correct": false,
+      "model_reasoning": "Small coherent estate, org name loosely matches domain, single nginx stack suggests self-hosted small business.",
+      "labeller_note": "#not so sure"
+    },
+    {
+      "entity_domain": "q-source-net.se",
+      "true_class": "hosting_or_cloud",
+      "predicted": "unknown",
+      "confidence": 0.35,
+      "correct": false,
+      "model_reasoning": "Tiny estate, generic nginx stack, org labels are hosting-provider descriptions not identifying the domain owner.",
+      "labeller_note": ""
+    },
+    {
+      "entity_domain": "cubepath.net",
+      "true_class": "hosting_or_cloud",
+      "predicted": "unknown",
+      "confidence": 0.35,
+      "correct": false,
+      "model_reasoning": "Org matches domain but small estate, no recognisable business identity, generic stack; insufficient evidence to classify confidently.",
+      "labeller_note": ""
+    },
+    {
+      "entity_domain": "0055ffyinheguibinting.cn",
+      "true_class": "unknown",
+      "predicted": "unknown",
+      "confidence": 0.3,
+      "correct": true,
+      "model_reasoning": "Opaque domain, tiny estate, org differs from domain, no identifying signals present.",
+      "labeller_note": "suspicious domain structure/brand masking"
+    },
+    {
+      "entity_domain": "tvssite.com",
+      "true_class": "end_customer_company",
+      "predicted": "unknown",
+      "confidence": 0.35,
+      "correct": false,
+      "model_reasoning": "Org matches domain but small estate, no products/tech detected; insufficient evidence to identify business type.",
+      "labeller_note": ""
+    },
+    {
+      "entity_domain": "gtstelecom.ro",
+      "true_class": "isp_telco",
+      "predicted": "isp_telco",
+      "confidence": 0.85,
+      "correct": true,
+      "model_reasoning": "Domain and org name explicitly \"GTS Telecom\", a Romanian telecom provider; small coherent estate.",
+      "labeller_note": ""
+    },
+    {
+      "entity_domain": "oktawave.com",
+      "true_class": "hosting_or_cloud",
+      "predicted": "hosting_or_cloud",
+      "confidence": 0.9,
+      "correct": true,
+      "model_reasoning": "Org matches domain; Oktawave is a known Polish cloud hosting provider, mixed web stack across hosts.",
+      "labeller_note": ""
+    },
+    {
+      "entity_domain": "telemaxx.net",
+      "true_class": "hosting_or_cloud",
+      "predicted": "hosting_or_cloud",
+      "confidence": 0.88,
+      "correct": true,
+      "model_reasoning": "Domain matches org; many unrelated tenant company names across hosts indicate a hosting/telecom provider, not one company.",
+      "labeller_note": ""
+    },
+    {
+      "entity_domain": "tigoune.com.co",
+      "true_class": "isp_telco",
+      "predicted": "isp_telco",
+      "confidence": 0.75,
+      "correct": true,
+      "model_reasoning": "Org \"Colombia Movil\" (Tigo) is a telecom carrier; MikroTik/Huawei/DVR devices reflect subscriber/network equipment, not a single org's stack.",
+      "labeller_note": ""
+    },
+    {
+      "entity_domain": "3cx.ae",
+      "true_class": "isp_telco",
+      "predicted": "end_customer_company",
+      "confidence": 0.72,
+      "correct": false,
+      "model_reasoning": "Domain matches 3CX Phone System product itself; coherent single-port stack across hosts, likely regional deployments of its own PBX platform.",
+      "labeller_note": ""
+    },
+    {
+      "entity_domain": "wadax-sv.jp",
+      "true_class": "hosting_or_cloud",
+      "predicted": "hosting_or_cloud",
+      "confidence": 0.75,
+      "correct": true,
+      "model_reasoning": "Domain implies WADAX hosting brand; Plesk plus web/mail stack across 38 hosts suggests shared hosting for tenants.",
+      "labeller_note": ""
+    },
+    {
+      "entity_domain": "secure-node.at",
+      "true_class": "hosting_or_cloud",
+      "predicted": "hosting_or_cloud",
+      "confidence": 0.72,
+      "correct": true,
+      "model_reasoning": "Domain name plus datacenter-named orgs (Internex, Datacenter Austria/Germany) indicate a hosting reseller, not a single company.",
+      "labeller_note": ""
+    },
+    {
+      "entity_domain": "wc.srv.br",
+      "true_class": "isp_telco",
+      "predicted": "hosting_or_cloud",
+      "confidence": 0.68,
+      "correct": false,
+      "model_reasoning": "Telecom org with Plesk and mixed IIS/Apache/nginx stacks across hosts suggests shared hosting for multiple tenants.",
+      "labeller_note": ""
+    },
+    {
+      "entity_domain": "theplanet.com",
+      "true_class": "hosting_or_cloud",
+      "predicted": "hosting_or_cloud",
+      "confidence": 0.85,
+      "correct": true,
+      "model_reasoning": "The Planet was a well-known dedicated hosting provider, now part of IBM Cloud (SoftLayer lineage).",
+      "labeller_note": ""
+    },
+    {
+      "entity_domain": "nexthost.eu",
+      "true_class": "hosting_or_cloud",
+      "predicted": "hosting_or_cloud",
+      "confidence": 0.75,
+      "correct": true,
+      "model_reasoning": "Domain and org \"bizway hosting\" both indicate a hosting provider; generic Apache/Exim stack across 17 hosts.",
+      "labeller_note": ""
+    },
+    {
+      "entity_domain": "wirelessaccess.co.za",
+      "true_class": "isp_telco",
+      "predicted": "isp_telco",
+      "confidence": 0.83,
+      "correct": true,
+      "model_reasoning": "MikroTik/Ubiquiti router fingerprints across hosts indicate subscriber CPE, typical of a wireless ISP.",
+      "labeller_note": ""
+    },
+    {
+      "entity_domain": "ucr.edu",
+      "true_class": "government_or_education",
+      "predicted": "government_or_education",
+      "confidence": 0.97,
+      "correct": true,
+      "model_reasoning": ".edu domain, org matches university name, coherent estate typical of institutional IT.",
+      "labeller_note": ""
+    },
+    {
+      "entity_domain": "etius.jp",
+      "true_class": "hosting_or_cloud",
+      "predicted": "hosting_or_cloud",
+      "confidence": 0.85,
+      "correct": true,
+      "model_reasoning": "1272 hosts, org names NTT PC Communications hosting service, uniform Apache stack typical of shared hosting platform.",
+      "labeller_note": ""
+    },
+    {
+      "entity_domain": "ultina.jp",
+      "true_class": "isp_telco",
+      "predicted": "hosting_or_cloud",
+      "confidence": 0.72,
+      "correct": false,
+      "model_reasoning": "311 hosts with Plesk control panel and uniform Postfix/Apache stack indicates shared hosting platform, likely SoftBank hosting brand.",
+      "labeller_note": ""
+    },
+    {
+      "entity_domain": "embratel.net.br",
+      "true_class": "isp_telco",
+      "predicted": "isp_telco",
+      "confidence": 0.93,
+      "correct": true,
+      "model_reasoning": "Major Brazilian carrier (Claro/Embratel), router/CPE fingerprints (MikroTik, Cisco, BGP) indicate network infrastructure.",
+      "labeller_note": ""
+    },
+    {
+      "entity_domain": "nframe.net",
+      "true_class": "hosting_or_cloud",
+      "predicted": "hosting_or_cloud",
+      "confidence": 0.85,
+      "correct": true,
+      "model_reasoning": "Many unrelated org names (symphony orchestra, law firm, funds) hosted under nFrame \u2014 classic multi-tenant datacenter estate.",
+      "labeller_note": ""
+    },
+    {
+      "entity_domain": "xbiz.ne.jp",
+      "true_class": "hosting_or_cloud",
+      "predicted": "hosting_or_cloud",
+      "confidence": 0.85,
+      "correct": true,
+      "model_reasoning": "Org matches domain (Xserver, known Japanese hosting brand), 122 hosts with uniform WordPress/nginx stack typical of shared hosting.",
+      "labeller_note": "not sure"
+    },
+    {
+      "entity_domain": "hostmonster.com",
+      "true_class": "hosting_or_cloud",
+      "predicted": "hosting_or_cloud",
+      "confidence": 0.97,
+      "correct": true,
+      "model_reasoning": "256 hosts, cPanel/WHM stack, org \"Unified Layer\" is a known shared-hosting brand; classic multi-tenant hosting estate.",
+      "labeller_note": ""
+    },
+    {
+      "entity_domain": "heteml.jp",
+      "true_class": "hosting_or_cloud",
+      "predicted": "hosting_or_cloud",
+      "confidence": 0.88,
+      "correct": true,
+      "model_reasoning": "Org GMO Pepabo owns heteml, a known Japanese shared hosting brand; 112 hosts, narrow generic web stack.",
+      "labeller_note": ""
+    },
+    {
+      "entity_domain": "pair.com",
+      "true_class": "hosting_or_cloud",
+      "predicted": "hosting_or_cloud",
+      "confidence": 0.9,
+      "correct": true,
+      "model_reasoning": "Org matches domain; known web hosting provider; 359 hosts with generic repeated stack typical of shared hosting.",
+      "labeller_note": ""
+    },
+    {
+      "entity_domain": "mywebdav.de",
+      "true_class": "hosting_or_cloud",
+      "predicted": "hosting_or_cloud",
+      "confidence": 0.85,
+      "correct": true,
+      "model_reasoning": "Domain implies webdav hosting service; org matches HostEurope, 202 hosts, mass allocation block.",
+      "labeller_note": ""
+    },
+    {
+      "entity_domain": "dvpl.in",
+      "true_class": "isp_telco",
+      "predicted": "end_customer_company",
+      "confidence": 0.6,
+      "correct": false,
+      "model_reasoning": "Small coherent estate behind Akamai WAF; orgs likely local ISP/hosting, not identity. Domain suggests distinct company.",
+      "labeller_note": ""
+    },
+    {
+      "entity_domain": "ah-server.com",
+      "true_class": "hosting_or_cloud",
+      "predicted": "unknown",
+      "confidence": 0.3,
+      "correct": false,
+      "model_reasoning": "Tiny estate, generic stack, org differs from domain; no identifying evidence either way.",
+      "labeller_note": ""
+    },
+    {
+      "entity_domain": "wide.ad.jp",
+      "true_class": "government_or_education",
+      "predicted": "government_or_education",
+      "confidence": 0.85,
+      "correct": true,
+      "model_reasoning": "WIDE Project is a Japanese academic research consortium (.ad.jp), org names match domain across estate.",
+      "labeller_note": ""
+    },
+    {
+      "entity_domain": "ladse.org",
+      "true_class": "government_or_education",
+      "predicted": "unknown",
+      "confidence": 0.35,
+      "correct": false,
+      "model_reasoning": "Single Weebly-hosted site behind Cloudflare; domain gives no identifiable organisation to classify confidently.",
+      "labeller_note": ""
+    },
+    {
+      "entity_domain": "viviotech.net",
+      "true_class": "end_customer_company",
+      "predicted": "hosting_or_cloud",
+      "confidence": 0.75,
+      "correct": false,
+      "model_reasoning": "Org matches domain (Vivio Technologies), name implies hosting, small coherent estate confirms provider identity.",
+      "labeller_note": ""
+    },
+    {
+      "entity_domain": "rajsyru.cz",
+      "true_class": "end_customer_company",
+      "predicted": "unknown",
+      "confidence": 0.35,
+      "correct": false,
+      "model_reasoning": "Tiny estate on shared Czech hosting (WEDOS); domain unrecognised, no identifying signal beyond generic nginx stack.",
+      "labeller_note": ""
+    },
+    {
+      "entity_domain": "netclusive.cloud",
+      "true_class": "hosting_or_cloud",
+      "predicted": "hosting_or_cloud",
+      "confidence": 0.65,
+      "correct": true,
+      "model_reasoning": "Domain and org match, \"cloud\" TLD, name suggests hosting brand; small coherent estate limits certainty.",
+      "labeller_note": ""
+    },
+    {
+      "entity_domain": "saba.host",
+      "true_class": "hosting_or_cloud",
+      "predicted": "hosting_or_cloud",
+      "confidence": 0.75,
+      "correct": true,
+      "model_reasoning": "Domain 'saba.host' with matching org 'Saba Abr Mizban' signals a hosting brand; .host TLD reinforces this.",
+      "labeller_note": ""
+    },
+    {
+      "entity_domain": "albedo.it",
+      "true_class": "end_customer_company",
+      "predicted": "end_customer_company",
+      "confidence": 0.68,
+      "correct": true,
+      "model_reasoning": "Org \"System Network of Albedo srl\" matches domain; small coherent Apache-only estate, no CDN/WAF.",
+      "labeller_note": ""
+    },
+    {
+      "entity_domain": "plusserver.de",
+      "true_class": "hosting_or_cloud",
+      "predicted": "hosting_or_cloud",
+      "confidence": 0.85,
+      "correct": true,
+      "model_reasoning": "Domain matches org; plusserver is a known German hosting/cloud provider.",
       "labeller_note": ""
     }
   ]
