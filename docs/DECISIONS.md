@@ -6,6 +6,40 @@ the reasoning survives even where the final write-up has to be brief.
 
 ---
 
+## Index
+
+Append-only: superseded entries are kept with the reasoning that made them
+plausible, because a log that only shows the conclusions which survived teaches
+nothing about how they were reached.
+
+| | Decision | Status |
+|---|---|---|
+| D1 | Stream and project in one pass, never materialise the source | current |
+| D2 | Entity key is the registrable domain, not the `org` field | current |
+| D3 | Normalise org strings before matching | current |
+| D4 | EPSS drives urgency, not CVE count and not CVSS | current |
+| D5 | Rules can prove infrastructure, never absence of it | current |
+| D6 | Prefer an extra model call over a silent exclusion | current |
+| D7 | The signal filter is a bigger cost lever than the rules | current |
+| D7b | Queue is ordered by fit, not intent | current |
+| D8 | Fit and intent stay separate | current |
+| D9 | Absence of `security.txt` is not a signal; presence is | current |
+| D10 | Enrichment is batch; the app makes no model calls | current |
+| D11 | Exclude honeypots and attacker infrastructure | current |
+| D12 | Cost estimates are worthless until validated against traces | current |
+| D12b | Not padding the prompt to reach the cache threshold | superseded by D12e |
+| D12c | Sonnet over Haiku, chosen on quality because cost is a wash | current |
+| D12d | The prefix estimate that was itself an estimate | superseded by D12e |
+| D12e | Caching fixed in v4, by measuring rather than reasoning | current |
+| D13 | Ship v3 on Haiku, on a 25-example eval | superseded by D14 |
+| D14 | Ship v3 on Sonnet, reversing D13 | superseded by D16 |
+| D15 | Ship at the cost ceiling rather than under it | current |
+| **D16** | **Ship v4 on Sonnet, reversing D14** | **current — shipped** |
+
+Three entries reverse an earlier one: D12e over D12b/D12d on prompt caching,
+and D14 then D16 on which configuration ships. Both reversals came from
+measuring again rather than from new reasoning.
+
 ## D1 — Stream and project in one pass, never materialise the source
 
 **Decision.** `ingest.py` decompresses the zstd source incrementally and writes
@@ -186,6 +220,62 @@ called, the sort key decides what the money buys.
 
 ---
 
+## D8 — Fit and intent stay separate
+
+**Decision.** Two independent 0–100 scores rather than one blended ranking,
+crossed into a tier.
+
+**Why.** Fit is structural and slow-moving (size, market, whether an incumbent
+vendor is already present). Intent is event-driven and fast (an actively
+exploited vulnerability, a cert expiring in three weeks). Blending them
+destroys the distinction a rep actually works from: high fit with low intent is
+a nurture sequence, low fit with high intent is a distraction, and only the
+high/high quadrant earns a call today.
+
+**Consequence.** Every contributing component is retained as its own column, so
+a ranking can be explained rather than asserted. A rep who disagrees can see
+what drove it.
+
+---
+
+## D9 — Absence of `security.txt` is not a signal; presence is
+
+**Decision.** Treat publishing a `security.txt` as a positive maturity marker
+rather than treating its absence as a negative.
+
+**Why.** 8,907,026 of 8,914,693 records lack one — 99.91%. Absence has no
+discriminating power. Only ~7,600 records have one, which makes presence a rare
+and meaningful marker of a functioning security programme.
+
+---
+
+## D10 — Enrichment is batch; the app makes no model calls
+
+**Decision.** Classification, briefs and outreach drafts are all precomputed.
+The deployed app reads a static curated Parquet and holds no API key.
+
+**Why.** Enrichment is a pipeline concern, not a request-path concern. Batch
+precomputation is cheaper, removes secret management from deployment, makes the
+hosted demo impossible to break with a rate limit, and is what a production
+system would do anyway.
+
+---
+
+## D11 — Exclude honeypots and attacker infrastructure
+
+**Decision.** Records tagged `honeypot`, or detected by RAT/malware scan
+modules, are dropped before entity grouping.
+
+**Why.** Honeypots are deliberate decoys — 48,383 records. The scan module
+field also surfaces `remcos-pro-rat` and `darktrack-rat`, which are
+attacker-operated command-and-control hosts.
+
+**Consequence.** Neither is a prospect, and surfacing either would cost the rep
+credibility on the first call. Guarded by a dedicated dbt test rather than
+trusted to a WHERE clause.
+
+---
+
 ## D12 — Cost estimates are worthless until validated against traces
 
 **Decision.** The dry-run estimator is corrected against measured traces, and
@@ -316,87 +406,6 @@ is economically irrelevant — is the transferable part, not the answer.
 
 ---
 
-## D14 — Ship v3 on Sonnet 5, reversing D13
-
-**Decision.** Production classification runs **v3 on Sonnet 5**. The 3,000
-production classifications were re-run under it rather than left as they were.
-
-**Why.** Four configurations against 75 hand-labelled entities, held-out batch
-in bold — that column is the honest one, because v4's changes were written
-after reading v3's failures on batch 1:
-
-| Config | Accuracy | Precision, all 75 | **Precision, held out** | Cost/call |
-|---|---:|---:|---:|---:|
-| **v3 · Sonnet** | 0.667 | 0.615 | **0.667** | $0.00378 |
-| v2 · Haiku | 0.653 | 0.588 | 0.500 | $0.00341 |
-| v4 · Haiku | 0.667 | 0.524 | 0.467 | ~$0.00155 |
-| v3 · Haiku | 0.627 | 0.471 | 0.385 | $0.00518 |
-
-Sonnet also produces the fewest false positives on the headline class — 5,
-against 7, 9 and 10 — which is the error that ends a sales call.
-
-**This reverses D13, and the reversal is the point.** D13 shipped v3-on-Haiku
-on 0.750 precision at n=25 and argued explicitly against Sonnet at 0.500, on
-the reasoning that Sonnet "commits where Haiku hedges". At n=75 the ordering
-inverts completely. Nothing changed but the number of labels.
-
-D13 also recorded, at the time, that support of 6 made one row worth 0.25 of
-precision and that only one comparison was defensible. That caveat was the only
-reliable content in it.
-
-**Two things follow, and both are worth more than the decision itself.**
-
-A small eval does not fail loudly. It returns a clean table with three decimal
-places and a plausible mechanism attached — the "higher accuracy, worse
-product" story in D13 was coherent, memorable and wrong. Plausibility is not
-evidence.
-
-And a limitation is only worth writing down if you act on it. Having recorded
-that n=25 could not rank configurations, the options on discovering the
-reversal were to quietly keep the old recommendation or to redo the production
-run. The run was redone, at about $11.
-
-**What survives from D13.** The asymmetry still governs: a confident wrong
-"company" is worse than an honest `unknown`, and that sets the confidence
-threshold, the tiering gate and the upstream heuristics. What changed is which
-model best satisfies it — a question the evidence, not the argument, decides.
-
----
-
-## D12e — Fixed in v4, and the fix was found by measuring rather than reasoning
-
-**Resolved and applied.** v4 caches on Haiku 4.5. Observed, not predicted:
-write of 4,580 on a cold call, reads of 4,580 on the two following it, input
-collapsing from 4,492 to 513.
-
-**The diagnosis in D12d was right in substance and wrong in its number.** It
-claimed v3's prefix was ~34 tokens short of 4,096. The real figure is closer to
-**230 short** — v3's block measures around 3,867, which sits almost exactly on
-the refusal boundary the probe found independently at ~3,875.
-
-**How the wrong number arose is the part worth keeping.** I built
-`measure_prefix.py` specifically to stop estimating, then estimated inside it:
-it counted tokens for the whole request, subtracted a count of the message, and
-called the difference the prefix. On v4 that method reported 4,895 where the
-API's actual cached block was 4,580 — over-reporting by ~315 tokens. Applied to
-v3 it reported 4,182, i.e. *86 tokens above* a floor the prompt was ~230 tokens
-below.
-
-So the tool built to end the estimating was wrong in the same direction, by
-about the same margin, for the fourth time in a row.
-
-**The fix, finally.** `measure_prefix.py` now makes one real call with
-`cache_control` set and reports `cache_creation_input_tokens`. That value is the
-cacheable block exactly, as the API accounts for it. A call costs a fraction of
-a cent — less than being wrong about it again.
-
-**Standing lesson.** Where a threshold is hard, do not compute the quantity —
-observe it. Four attempts here failed identically: each derived a number that
-was close enough to sound right and wrong enough to land on the wrong side of a
-cutoff. The observation was always one API call away.
-
----
-
 ## D12d — Superseded: the prefix estimate that was itself an estimate
 
 **Resolved.** Three iterations assumed the documented minimum was wrong. It was
@@ -444,59 +453,112 @@ and fatal against a threshold. Where a hard cutoff exists, measure it.
 
 ---
 
-## D8 — Fit and intent stay separate
+## D12e — Fixed in v4, and the fix was found by measuring rather than reasoning
 
-**Decision.** Two independent 0–100 scores rather than one blended ranking,
-crossed into a tier.
+**Resolved and applied.** v4 caches on Haiku 4.5. Observed, not predicted:
+write of 4,580 on a cold call, reads of 4,580 on the two following it, input
+collapsing from 4,492 to 513.
 
-**Why.** Fit is structural and slow-moving (size, market, whether an incumbent
-vendor is already present). Intent is event-driven and fast (an actively
-exploited vulnerability, a cert expiring in three weeks). Blending them
-destroys the distinction a rep actually works from: high fit with low intent is
-a nurture sequence, low fit with high intent is a distraction, and only the
-high/high quadrant earns a call today.
+**The diagnosis in D12d was right in substance and wrong in its number.** It
+claimed v3's prefix was ~34 tokens short of 4,096. The real figure is closer to
+**230 short** — v3's block measures around 3,867, which sits almost exactly on
+the refusal boundary the probe found independently at ~3,875.
 
-**Consequence.** Every contributing component is retained as its own column, so
-a ranking can be explained rather than asserted. A rep who disagrees can see
-what drove it.
+**How the wrong number arose is the part worth keeping.** I built
+`measure_prefix.py` specifically to stop estimating, then estimated inside it:
+it counted tokens for the whole request, subtracted a count of the message, and
+called the difference the prefix. On v4 that method reported 4,895 where the
+API's actual cached block was 4,580 — over-reporting by ~315 tokens. Applied to
+v3 it reported 4,182, i.e. *86 tokens above* a floor the prompt was ~230 tokens
+below.
 
----
+So the tool built to end the estimating was wrong in the same direction, by
+about the same margin, for the fourth time in a row.
 
-## D9 — Absence of `security.txt` is not a signal; presence is
+**The fix, finally.** `measure_prefix.py` now makes one real call with
+`cache_control` set and reports `cache_creation_input_tokens`. That value is the
+cacheable block exactly, as the API accounts for it. A call costs a fraction of
+a cent — less than being wrong about it again.
 
-**Decision.** Treat publishing a `security.txt` as a positive maturity marker
-rather than treating its absence as a negative.
-
-**Why.** 8,907,026 of 8,914,693 records lack one — 99.91%. Absence has no
-discriminating power. Only ~7,600 records have one, which makes presence a rare
-and meaningful marker of a functioning security programme.
-
----
-
-## D10 — Enrichment is batch; the app makes no model calls
-
-**Decision.** Classification, briefs and outreach drafts are all precomputed.
-The deployed app reads a static curated Parquet and holds no API key.
-
-**Why.** Enrichment is a pipeline concern, not a request-path concern. Batch
-precomputation is cheaper, removes secret management from deployment, makes the
-hosted demo impossible to break with a rate limit, and is what a production
-system would do anyway.
+**Standing lesson.** Where a threshold is hard, do not compute the quantity —
+observe it. Four attempts here failed identically: each derived a number that
+was close enough to sound right and wrong enough to land on the wrong side of a
+cutoff. The observation was always one API call away.
 
 ---
 
-## D11 — Exclude honeypots and attacker infrastructure
+## D13 — Superseded: ship v3 on Haiku 4.5, on a 25-example eval
 
-**Decision.** Records tagged `honeypot`, or detected by RAT/malware scan
-modules, are dropped before entity grouping.
+**Decision at the time.** Production classification runs **v3 on Haiku 4.5**.
 
-**Why.** Honeypots are deliberate decoys — 48,383 records. The scan module
-field also surfaces `remcos-pro-rat` and `darktrack-rat`, which are
-attacker-operated command-and-control hosts.
+**Why it was believed.** Three configurations against 25 hand-labelled
+entities. v3-on-Haiku led on precision for `end_customer_company` at **0.750**;
+Sonnet measured 0.500. The entry argued explicitly against Sonnet on the
+reasoning that it "commits where Haiku hedges", and that decisiveness is the
+wrong disposition when a wrong commitment reaches a salesperson.
 
-**Consequence.** Neither is a prospect, and surfacing either would cost the rep
-credibility on the first call. Guarded by a dedicated dbt test rather than
-trusted to a WHERE clause.
+**The caveat recorded at the same time.** Support on the headline class was 6,
+so a single row moved precision by 0.25; only v3-over-v2 on a fixed model was
+defensible; and 100–150 examples with two labellers was what the comparisons
+actually needed.
+
+**What happened.** At n=75 the ordering inverted completely — v3-Haiku last at
+0.385 held-out, v3-Sonnet first at 0.667. Superseded by **D14**, itself
+superseded by **D16**. The caveat above turned out to be the only reliable
+content in the entry, which is the argument for writing a limitation down when
+you notice it rather than after it embarrasses you.
+
+**What survives.** The asymmetry still governs: a confident wrong "company" is
+worse than an honest `unknown`, and that sets the confidence threshold, the
+tiering gate and the upstream heuristics. What changed is which configuration
+best satisfies it — a question the evidence decided, not the argument.
+
+---
+
+## D14 — Ship v3 on Sonnet 5, reversing D13
+
+**Decision.** Production classification runs **v3 on Sonnet 5**. The 3,000
+production classifications were re-run under it rather than left as they were.
+
+**Why.** Four configurations against 75 hand-labelled entities, held-out batch
+in bold — that column is the honest one, because v4's changes were written
+after reading v3's failures on batch 1:
+
+| Config | Accuracy | Precision, all 75 | **Precision, held out** | Cost/call |
+|---|---:|---:|---:|---:|
+| **v3 · Sonnet** | 0.667 | 0.615 | **0.667** | $0.00378 |
+| v2 · Haiku | 0.653 | 0.588 | 0.500 | $0.00341 |
+| v4 · Haiku | 0.667 | 0.524 | 0.467 | ~$0.00155 |
+| v3 · Haiku | 0.627 | 0.471 | 0.385 | $0.00518 |
+
+Sonnet also produces the fewest false positives on the headline class — 5,
+against 7, 9 and 10 — which is the error that ends a sales call.
+
+**This reverses D13, and the reversal is the point.** D13 shipped v3-on-Haiku
+on 0.750 precision at n=25 and argued explicitly against Sonnet at 0.500, on
+the reasoning that Sonnet "commits where Haiku hedges". At n=75 the ordering
+inverts completely. Nothing changed but the number of labels.
+
+D13 also recorded, at the time, that support of 6 made one row worth 0.25 of
+precision and that only one comparison was defensible. That caveat was the only
+reliable content in it.
+
+**Two things follow, and both are worth more than the decision itself.**
+
+A small eval does not fail loudly. It returns a clean table with three decimal
+places and a plausible mechanism attached — the "higher accuracy, worse
+product" story in D13 was coherent, memorable and wrong. Plausibility is not
+evidence.
+
+And a limitation is only worth writing down if you act on it. Having recorded
+that n=25 could not rank configurations, the options on discovering the
+reversal were to quietly keep the old recommendation or to redo the production
+run. The run was redone, at about $11.
+
+**What survives from D13.** The asymmetry still governs: a confident wrong
+"company" is worse than an honest `unknown`, and that sets the confidence
+threshold, the tiering gate and the upstream heuristics. What changed is which
+model best satisfies it — a question the evidence, not the argument, decides.
 
 ---
 
