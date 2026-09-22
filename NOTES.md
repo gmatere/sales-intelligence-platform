@@ -125,6 +125,13 @@ scaffolding. A silent pricing failure has no other surface.
 docs.** I'd assumed three times over that the documented minimum cacheable
 prefix didn't apply to us. It did. Our block was about 34 tokens under 4,096.
 
+*(Later correction: that 34 was itself an estimate, and wrong. Measuring the
+prefix by making one real call and reading `cache_creation_input_tokens` put
+v3's block near 3,867 — roughly 230 short, not 34. Even the script I wrote to
+stop me estimating over-reported by ~315 tokens. D12d in DECISIONS.md has the
+full unwinding. Leaving the original line as written, because the pattern of
+confidently correcting an estimate with another estimate is the actual lesson.)*
+
 The error is worth naming precisely: the floor applies to the *cacheable
 prefix*, not to total input, and I'd been measuring total. The user message
 sits after the cache breakpoint and never forms part of the block, so reading
