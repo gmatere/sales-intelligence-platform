@@ -156,9 +156,11 @@ page titles, WHOIS registrant data or a search tool would resolve most of them.
 This is the highest-value increment, and it is an evidence problem rather than
 a prompting one.
 
-**2. A larger eval set.** 25 examples with support of 6 on the headline class
-measures whether the system works but cannot rank configurations. 100–150, two
-labellers, disagreements adjudicated.
+**2. A larger eval set — partially done, and it mattered.** The set was grown
+from 25 to 75 and the configuration ranking inverted: the version recommended
+at n=25 came last at n=75. Support is now 18 on the headline class, which is
+better and still not enough. 150+ with two labellers and adjudicated
+disagreements is the next step.
 
 **3. Tier thresholds set from the distribution.** 787 of 971 confirmed
 prospects land in tier A, because the queue is already filtered to entities

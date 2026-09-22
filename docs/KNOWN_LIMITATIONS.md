@@ -278,19 +278,30 @@ fit so a partial run covers the entities most likely to be real companies, but
 everything below the cut stays `U - unclassified` and never reaches a rep.
 Production would run the full queue on a batch endpoint overnight.
 
-**[measured] Classification precision is 0.750 on the class that matters.**
-v3 on Haiku 4.5, against 25 hand-labelled entities: accuracy 0.520, precision
-on `end_customer_company` 0.750, recall 0.500. One false positive
-(`ibercsm.net`) would have reached a rep's call list. Full analysis in
-`evals/RESULTS.md`.
+**[measured] Classification precision is 0.615 on the class that matters.**
+v3 on Sonnet 5, against 75 hand-labelled entities: accuracy 0.667, precision on
+`end_customer_company` 0.615 overall and 0.667 on the held-out batch, recall
+0.444. Five false positives would have reached a rep's call list. Full analysis
+in `evals/RESULTS.md`.
 
-**[risk] The eval set is too small to separate the configurations.**
-`end_customer_company` has support of 6 and each configuration made four
-predictions in it, so the difference between 0.750 and 0.500 precision is one
-row. Only v3-over-v2 is defensible, because it moved three metrics at once on a
-fixed model. Everything else is noise, and the numbers should not be read to
-three decimal places. 100–150 examples with two labellers and adjudicated
-disagreements is what these comparisons need.
+**[demonstrated] A 25-example eval produced a confidently wrong ranking.**
+The first version of this document reported 0.750 precision for v3-on-Haiku at
+n=25, ranked it first of three, and argued against Sonnet at 0.500. At n=75 the
+ordering inverts entirely: Haiku falls to 0.385 on held-out data and Sonnet
+leads at 0.667. Nothing changed but the number of labels.
+
+The limitation was recorded before the reversal — that support of 6 made a
+single row worth 0.25 of precision, and that only one comparison was
+defensible. It was the only reliable line in that table. This is the strongest
+available argument for writing a limitation down when you notice it rather than
+after it embarrasses you, and for acting on it: the recommendation was reversed
+and the production run redone.
+
+**[risk] 75 is better than 25 and still small.**
+Support on the headline class is 18 overall and 12 on the held-out batch, so
+the gap between 0.667 and 0.500 is two rows. The current ordering is more
+trustworthy than the previous one; it is not settled. 150+ examples with two
+labellers and adjudicated disagreements is what would settle it.
 
 **[risk] The labeller had evidence the model did not.**
 Single-host entities with unfamiliar names — `gane.com.br`, `provet.in`,

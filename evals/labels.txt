@@ -1,4 +1,4 @@
-# LABELLING WORKSHEET — 25 entities
+# LABELLING WORKSHEET
 #
 # After each "->" type ONE of these six words:
 #
@@ -9,110 +9,213 @@
 #   government   council, ministry, university, school, public body
 #   unknown      you genuinely cannot tell
 #
-# Anything after a "#" on a line is a note to yourself — write down WHY,
-# especially where you were unsure. Save the file when done.
+# Anything after a "#" is a note to yourself — worth writing on the ones you
+# found hard. When a label and the model disagree later, that note is how you
+# tell which of you was wrong.
 #
-# Evidence is shown under each line: country, hosts, ports, the registered
-# org name (usually the hosting provider, not the company), and software.
+# Use `unknown` freely. A set with no ambiguous cases measures the easy half of
+# the job and flatters the score.
+#
+# Under each line: country, hosts, ports, the registered org name (usually the
+# hosting provider, NOT the company), and detected software.
 # ----------------------------------------------------------------------
 
- 1. gane.com.br                      -> company
-      US · 1 hosts · 3 ports · org: hostdime com
-      running: Apache httpd, Control Web Panel
-
- 2. provet.in                        -> company
-      CA · 1 hosts · 2 ports · org: hut8 hpc
-      running: nginx
-
- 3. wintram.com.tw                   -> company
-      TW · 1 hosts · 1 ports · org: data communication business group
-      running: Hikvision IP Camera
-
- 4. bml.cz                           -> company
-      CZ · 1 hosts · 1 ports · org: inway   a s  network
+ 1. bond.style                          -> company
+      JP · 1 hosts · 1 ports · org: gmo internet group
       running: Apache httpd
 
- 5. mobile-cti.com                   -> isp
-      JP · 1 hosts · 1 ports · org: sakura internet
-      running: OpenSSH
+ 2. westernbid.co                       -> company
+      US · 1 hosts · 1 ports · org: liquid web  l l c
+      running: Microsoft IIS httpd
 
- 6. 155.159.120.87                   -> isp #had to do detailed (2 step) search to get to this
-      PE · 2 hosts · 1 ports · org: cloud innovation
-      running: Pure-FTPd
+ 3. tizbi.com                           -> company
+      US · 1 hosts · 1 ports · org: tizbi
+      running: Microsoft IIS httpd
 
- 7. nichost.ru                       -> hosting
-      RU · 8 hosts · 2 ports · org: ru center | jsc  ru center
-      running: nginx
+ 4. levyshow.com                        -> company
+      CA · 1 hosts · 2 ports · org: levy show service
+      running: Apache httpd
 
- 8. jdsports.id                      -> company
-      ID · 2 hosts · 3 ports · org: salesforce com | pt azec indonesia management services
-      running: Postfix smtpd
+ 5. 6-ifnl.net                          -> isp
+      GB · 1 hosts · 2 ports · org: independent fibre networks
+      running: Apache httpd
 
- 9. web.com                          -> hosting
-      US · 2 hosts · 2 ports · org: web com group | register com
+ 6. legionhq.org                        -> company
+      NL · 1 hosts · 3 ports · org: interactive 3d
+      running: nginx, Postfix smtpd
+
+ 7. secret-closet.com                   -> company
+      TW · 1 hosts · 1 ports · org: chunghwa telecom
+      running: Microsoft IIS httpd
+
+ 8. lambmotor.com                       -> company
+      US · 1 hosts · 2 ports · org: carsforsale com
       running: none
 
-10. xssl.net                         -> hosting
-      GB · 3 hosts · 5 ports · org: easyspace
-      running: Exim smtpd, cPanel, Apache httpd
-
-11. ultaserver.net                   -> hosting
-      DE · 12 hosts · 9 ports · org: ultahost | firstcolo | gci network solutions | x dsl networking soluti
-      running: nginx
-
-12. rb-hosting.io                    -> hosting
-      BE · 23 hosts · 1 ports · org: combell nv
-      running: nginx
-
-13. ibercsm.net                      -> hosting
-      ES · 14 hosts · 4 ports · org: ayesa ibermatica  sau | ansib solutions
-      running: Apache httpd, Microsoft IIS httpd, Fortinet FortiGate-200E
-
-14. vpshostgator.com                 -> hosting
-      US · 17 hosts · 10 ports · org: oso grande ip services | hostgator com | newfold digital
-      running: n8n, Exim smtpd, Apache httpd
-
-15. ax5z.com                         -> security
-      DE · 68 hosts · 2 ports · org: soprado | myra security | bymyra
+ 9. 143-14-65-2.pmtaserver.com          -> unknown # infrastructure/relay subdomain
+      US · 1 hosts · 1 ports · org: brander group
       running: none
 
-16. cyber-folks.pl                   -> hosting
-      PL · 241 hosts · 15 ports · org: cd inf kr | cf vps gd | sh shared hosting kr | cf shared hosting gd | 
-      running: Apache httpd, LiteSpeed httpd, nginx, ProFTPD, MariaDB, Open
+10. actionemb.com                       -> company
+      US · 1 hosts · 1 ports · org: hurricane electric
+      running: Apache httpd
 
-17. sarenet.es                       -> isp
-      ES · 110 hosts · 10 ports · org: osakidetza | pais varios | fundacion gaiker | autoridad portuaria de b
-      running: nginx, Postfix smtpd, SonicWall, OpenResty
+11. pika.net.id                         -> isp
+      ID · 4 hosts · 4 ports · org: pt pika media komunika
+      running: MikroTik router ftpd
 
-18. dreamhostps.com                  -> hosting
-      US · 225 hosts · 6 ports · org: inmotion hosting | new dream network | dreamhost
-      running: nginx, Apache httpd
+12. altovalenet.com.br                  -> isp
+      BR · 5 hosts · 4 ports · org: alto vale net ltda
+      running: Intelbras MHDX 5116, MikroTik bandwidth-test server
 
-19. libertypr.net                    -> isp
-      PR · 160 hosts · 9 ports · org: liberty cablevision   caguas | liberty communications of puerto rico |
-      running: micro_httpd, Apache httpd, Dahua-based DVR, Dropbear sshd, G
+13. fluency.net.uk                      -> isp
+      GB · 7 hosts · 3 ports · org: fluency communications | network roi   scottish woodlands | cgi group 
+      running: Apache httpd
 
-20. ed.ac.uk                         -> government
-      US · 226 hosts · 8 ports · org: university of edinburgh | the university of edinburgh | pantheon | the
-      running: Jetty, Apache httpd, ArangoDB, nginx, Sendmail
+14. isptec.com.br                       -> isp
+      BR · 4 hosts · 4 ports · org: isptec sistemas de comunica  o eireli | posto de combustiveis distrito
+      running: MikroTik router ftpd, MikroTik, MikroTik Winbox
 
-21. cottontex.ro                     -> company
-      RO · 2 hosts · 2 ports · org: s c  cottontex | take ionescu  40
-      running: none
-
-22. pollub.pl                        -> government
-      PL · 2 hosts · 1 ports · org: politechnika lubelska
+15. digitalags.net                      -> isp ##not so sure
+      MX · 2 hosts · 1 ports · org: digital comunitation
       running: nginx
 
-23. somesite.de                      -> hosting
-      DE · 4 hosts · 2 ports · org: hamburg internet exchange
-      running: nginx, Apache httpd
+16. q-source-net.se                     -> hosting
+      SE · 2 hosts · 1 ports · org: customer servers | customer vps services located in stockholm
+      running: nginx
 
-24. magma.ca                         -> isp
-      CA · 4 hosts · 3 ports · org: rogers communications canada | hut 8 mining
-      running: ntpd, Apache httpd
+17. cubepath.net                        -> hosting
+      US · 6 hosts · 3 ports · org: cubepath | 16192 coastal highway lewes  delaware 19958 usa | soltia co
+      running: Ncat http proxy, OpenSSH, nginx
 
-25. cyberwebserver-17.de             -> hosting
-      DE · 2 hosts · 2 ports · org: cyberwebhosting ip network
-      running: Postfix smtpd
+18. 0055ffyinheguibinting.cn            -> unknown # suspicious domain structure/brand masking
+      HK · 2 hosts · 1 ports · org: digital core technology
+      running: nginx
 
+19. tvssite.com                         -> company
+      BR · 2 hosts · 2 ports · org: teske virtual system ltda
+      running: none
+
+20. gtstelecom.ro                       -> isp
+      RO · 8 hosts · 3 ports · org: gts telecom | gts telecom srl | gts telecom romania infrastructure
+      running: Apache httpd
+
+21. oktawave.com                        -> hosting
+      PL · 12 hosts · 9 ports · org: oktawave s a
+      running: Apache httpd, nginx, ProFTPD, net-snmp
+
+22. telemaxx.net                        -> hosting
+      DE · 37 hosts · 16 ports · org: asseco solutions | arcus einkaufsgesellschaft mbh | bits   buehl | sta
+      running: BGP, nginx, Microsoft IIS httpd, Remote Desktop Protocol, Ap
+
+23. tigoune.com.co                      -> isp
+      CO · 33 hosts · 17 ports · org: colombia m vil
+      running: MikroTik, Nitromag, Microsoft ftpd, Apache httpd, ntpd, Mikr
+
+24. 3cx.ae                              -> isp
+      AE · 17 hosts · 1 ports · org: emirates integrated telecommunications company pjsc  eitc du | emirate
+      running: nginx, 3CX Phone System Management Console
+
+25. wadax-sv.jp                         -> hosting
+      JP · 38 hosts · 10 ports · org: gmo globalsign holdings k k
+      running: Apache httpd, Postfix smtpd, nginx
+
+26. secure-node.at                      -> hosting
+      AT · 50 hosts · 6 ports · org: internex | space 24 | datacenter austria   at | fiberlink | datacenter
+      running: Apache httpd
+
+27. wc.srv.br                           -> isp
+      BR · 15 hosts · 3 ports · org: metroflex telecomunicacoes ltda
+      running: nginx, Microsoft IIS httpd, Apache httpd
+
+28. theplanet.com                       -> hosting
+      US · 37 hosts · 3 ports · org: ibm cloud
+      running: Apache httpd, nginx
+
+29. nexthost.eu                         -> hosting
+      NL · 17 hosts · 4 ports · org: bizway | lageweg beheer b v | ipv4 space for bizway hosting
+      running: Apache httpd, Exim smtpd
+
+30. wirelessaccess.co.za                -> isp
+      ZA · 14 hosts · 5 ports · org: cape connect internet
+      running: MikroTik, MikroTik bandwidth-test server, Ubiquiti AirRouter
+
+31. ucr.edu                             -> government
+      US · 111 hosts · 11 ports · org: university of california  riverside | salesforce com
+      running: Kubernetes, Postfix smtpd, nginx
+
+32. etius.jp                            -> hosting
+      JP · 1272 hosts · 10 ports · org: server hosting service  nttpccommunications | server hosting service  
+      running: Apache httpd
+
+33. ultina.jp                           -> isp
+      JP · 311 hosts · 7 ports · org: softbank
+      running: Postfix smtpd, Apache httpd
+
+34. embratel.net.br                     -> isp
+      BR · 233 hosts · 14 ports · org: claro s a
+      running: MikroTik Winbox, OpenResty, ciscoSystems, BGP, H3C, ntpd, Ci
+
+35. nframe.net                          -> hosting
+      US · 138 hosts · 10 ports · org: expedient | t2 systems | indianapolis symphony orchestra | adayana | u
+      running: Microsoft IIS httpd, WHM, Apache httpd, BGP, nginx, Microsof
+
+36. xbiz.ne.jp                          -> hosting #not sure
+      JP · 122 hosts · 4 ports · org: xserver
+      running: Postfix smtpd, nginx
+
+37. hostmonster.com                     -> hosting
+      US · 256 hosts · 18 ports · org: unified layer
+      running: OpenSSH, Exim smtpd, WHM, Pure-FTPd, PostgreSQL, cPanel, Apa
+
+38. heteml.jp                           -> hosting
+      JP · 112 hosts · 5 ports · org: gmo pepabo | gmo internet group
+      running: Apache httpd, nginx
+
+39. pair.com                            -> hosting
+      US · 359 hosts · 15 ports · org: pair networks
+      running: OpenSSH, MySQL, Apache httpd, Postfix smtpd
+
+40. mywebdav.de                         -> hosting
+      DE · 202 hosts · 8 ports · org: hosteurope | mass sub alloc | host europe
+      running: none
+
+41. dvpl.in                             -> isp
+      IN · 3 hosts · 2 ports · org: vainavi industries | e net entertainment pvt
+      running: AkamaiGHost
+
+42. ah-server.com                       -> hosting
+      NL · 3 hosts · 2 ports · org: dataweb global | dataweb global group b v
+      running: Apache httpd, nginx
+
+43. wide.ad.jp                          -> government
+      JP · 28 hosts · 10 ports · org: wide project  interconnection at otemachi | wide project | planetlab i
+      running: JD-GUI Java decompiler, Postfix smtpd, BGP, nginx
+
+44. ladse.org                           -> government
+      US · 1 hosts · 2 ports · org: weebly
+      running: CloudFlare
+
+45. viviotech.net                       -> company
+      US · 3 hosts · 3 ports · org: justpressone | vivio technologies
+      running: MySQL, Postfix smtpd
+
+46. rajsyru.cz                          -> company
+      CZ · 2 hosts · 2 ports · org: wedos hosting services | a100 row
+      running: nginx
+
+47. netclusive.cloud                    -> hosting
+      DE · 4 hosts · 4 ports · org: netclusive
+      running: OpenSSH, Postfix smtpd
+
+48. saba.host                           -> hosting
+      IR · 10 hosts · 5 ports · org: saba abr mizban
+      running: Microsoft HTTPAPI httpd, Exim smtpd
+
+49. albedo.it                           -> company
+      IT · 2 hosts · 2 ports · org: consorzio lavaldocco c c s  a r l | system network of albedo s r l
+      running: Apache httpd
+
+50. plusserver.de                       -> hosting
+      DE · 1 hosts · 1 ports · org: plusserver
+      running: Apache httpd

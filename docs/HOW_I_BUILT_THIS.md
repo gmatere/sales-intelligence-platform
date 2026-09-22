@@ -79,8 +79,8 @@ shape. They cannot tell you the shape is describing the wrong thing.
 
 **The eval set is 25 examples and cannot rank the configurations.** Support of
 6 on the headline class means a single row moves precision by 0.25. The number
-it produces — 0.750 precision on `end_customer_company` — tells you the system
-works. It does not tell you v3 beats v2 on Sonnet, or that Haiku beats Sonnet,
+it produces — 0.615 precision on `end_customer_company`, 0.667 on held-out
+data — tells you the system works. It does not tell you v3 beats v2 on Sonnet, or that Haiku beats Sonnet,
 even though the table appears to say both. The only comparison I would defend
 is v3 over v2 on a fixed model, because three metrics moved together.
 

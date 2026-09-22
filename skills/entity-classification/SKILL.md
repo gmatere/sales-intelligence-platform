@@ -14,15 +14,16 @@ description: >
   those questions all have measured answers here rather than guesses.
 version: 1.1.0
 prompt: prompts/v3/entity_classification.md
-model: claude-haiku-4-5
+model: claude-sonnet-5
 measured:
-  eval_set: evals/labelled_set.jsonl (25 hand-labelled entities)
-  precision_end_customer_company: 0.750
-  recall_end_customer_company: 0.500
-  accuracy: 0.520
+  eval_set: evals/labelled_set.jsonl (75 hand-labelled entities, two batches)
+  precision_end_customer_company: 0.615
+  precision_held_out_batch: 0.667
+  recall_end_customer_company: 0.444
+  accuracy: 0.667
   results: evals/RESULTS.md
 cost:
-  per_call_usd: 0.00518
+  per_call_usd: 0.00378
   ceiling_usd_per_refresh: 150
 ---
 
@@ -151,10 +152,16 @@ settle it, prefer `unknown` over a confident wrong exclusion.
 
 Two consequences follow, and both look wrong until you apply the asymmetry:
 
-**Run Haiku, not Sonnet.** Sonnet scores higher on accuracy (0.600 against
-0.520) and lower on the metric that matters (0.500 against 0.750), because it
-commits where Haiku hedges. Decisiveness is the wrong disposition when a wrong
-commitment reaches a salesperson.
+**Run Sonnet, not Haiku — but check the reasoning before trusting it.** At 25
+labels this said the opposite, and said it confidently: Haiku measured 0.750
+precision against Sonnet's 0.500, and the conclusion drawn was that Haiku's
+tendency to hedge suited the asymmetry better. At 75 labels the ordering
+inverts — Haiku 0.385 on held-out data, Sonnet 0.667. Sonnet also makes the
+fewest false positives on the headline class, which is the error that ends a
+sales call.
+
+The lesson transfers past this decision: a small eval will produce a ranking,
+and it will look like a finding.
 
 **Prefer an extra model call to a silent exclusion.** When tuning any rule
 upstream of this skill, set thresholds so borderline cases fall through to
@@ -187,9 +194,10 @@ empirically.
 a veterinary business; the model sees one host, nginx, and an org name belonging
 to whoever owns the IP block. An evidence problem, not a prompting one.
 
-**The eval set cannot rank configurations.** 25 examples, support of 6 on the
-headline class — one row moves precision by 0.25. Only v3-over-v2 is defensible,
-because three metrics moved together on a fixed model. Treat the rest as noise.
+**The eval set is small enough to have already misled once.** 75 examples,
+support of 18 overall and 12 held out. At 25 it produced a ranking that
+inverted completely on more data. The current ordering is better supported, not
+settled — two rows still separate first from third.
 
 **A known prompt fix is deliberately unapplied.** `ax5z.com` carries
 `myra security` in its org list and every configuration missed it. An
@@ -206,5 +214,5 @@ It belongs in v4, against a set built afterwards.
 | `llm/tracing.py` | trace schema, pricing, per-model cache thresholds |
 | `llm/probe_cache_floor.py` | empirical cache-threshold finder |
 | `evals/run_eval.py` | scores a configuration against the labelled set |
-| `evals/labelled_set.jsonl` | 25 hand-labelled entities — human ground truth |
+| `evals/labelled_set.jsonl` | 75 hand-labelled entities, batched — human ground truth |
 | `export_curated.py` | merges verdicts into the serving artifact |

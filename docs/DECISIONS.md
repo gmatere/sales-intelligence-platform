@@ -315,32 +315,50 @@ is economically irrelevant — is the transferable part, not the answer.
 
 ---
 
-## D13 — Ship v3 on Haiku 4.5, not the stronger model
+## D14 — Ship v3 on Sonnet 5, reversing D13
 
-**Decision.** Production classification runs v3 on Haiku 4.5.
+**Decision.** Production classification runs **v3 on Sonnet 5**. The 3,000
+production classifications were re-run under it rather than left as they were.
 
-**Why.** Measured against 25 hand-labelled entities:
+**Why.** Four configurations against 75 hand-labelled entities, held-out batch
+in bold — that column is the honest one, because v4's changes were written
+after reading v3's failures on batch 1:
 
-| Config | Accuracy | Precision on `end_customer_company` | Recall |
-|---|---:|---:|---:|
-| v2 · Haiku | 0.480 | 0.667 | 0.333 |
-| **v3 · Haiku** | 0.520 | **0.750** | **0.500** |
-| v3 · Sonnet | **0.600** | 0.500 | 0.333 |
+| Config | Accuracy | Precision, all 75 | **Precision, held out** | Cost/call |
+|---|---:|---:|---:|---:|
+| **v3 · Sonnet** | 0.667 | 0.615 | **0.667** | $0.00378 |
+| v2 · Haiku | 0.653 | 0.588 | 0.500 | $0.00341 |
+| v4 · Haiku | 0.667 | 0.524 | 0.467 | ~$0.00155 |
+| v3 · Haiku | 0.627 | 0.471 | 0.385 | $0.00518 |
 
-Sonnet wins on accuracy and loses on the metric that governs deployment. It
-commits to `end_customer_company` where Haiku returns `unknown`, which raises
-overall correctness and lowers precision on the one class where a wrong answer
-reaches a salesperson. **Higher accuracy, worse product.**
+Sonnet also produces the fewest false positives on the headline class — 5,
+against 7, 9 and 10 — which is the error that ends a sales call.
 
-**What the data does not support.** With support of 6 and four predictions per
-config, the precision gap is one row. Only v3-over-v2 is defensible — three
-metrics moving together on a fixed model. The rest is noise and is reported as
-such.
+**This reverses D13, and the reversal is the point.** D13 shipped v3-on-Haiku
+on 0.750 precision at n=25 and argued explicitly against Sonnet at 0.500, on
+the reasoning that Sonnet "commits where Haiku hedges". At n=75 the ordering
+inverts completely. Nothing changed but the number of labels.
 
-**Standing constraint this encodes.** The asymmetry that set the tiering rules
-and the heuristic thresholds also sets the model choice: a confident wrong
-"company" is worse than an honest `unknown`. Every layer of this system is
-tuned toward the same bias, and the eval confirms the model layer should be too.
+D13 also recorded, at the time, that support of 6 made one row worth 0.25 of
+precision and that only one comparison was defensible. That caveat was the only
+reliable content in it.
+
+**Two things follow, and both are worth more than the decision itself.**
+
+A small eval does not fail loudly. It returns a clean table with three decimal
+places and a plausible mechanism attached — the "higher accuracy, worse
+product" story in D13 was coherent, memorable and wrong. Plausibility is not
+evidence.
+
+And a limitation is only worth writing down if you act on it. Having recorded
+that n=25 could not rank configurations, the options on discovering the
+reversal were to quietly keep the old recommendation or to redo the production
+run. The run was redone, at about $11.
+
+**What survives from D13.** The asymmetry still governs: a confident wrong
+"company" is worse than an honest `unknown`, and that sets the confidence
+threshold, the tiering gate and the upstream heuristics. What changed is which
+model best satisfies it — a question the evidence, not the argument, decides.
 
 ---
 

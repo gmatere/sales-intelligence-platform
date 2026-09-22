@@ -88,25 +88,31 @@ tiering, queue the remainder, alert.
 
 ## Measured quality
 
-v3 on Haiku 4.5, against 25 hand-labelled entities:
+v3 on Sonnet 5, against 75 hand-labelled entities:
 
 | | |
 |---|---|
-| Precision, `end_customer_company` | **0.750** |
-| Recall | 0.500 |
-| Accuracy | 0.520 |
+| Precision, `end_customer_company` | **0.615** (0.667 on held-out batch) |
+| Recall | 0.444 |
+| Accuracy | 0.667 |
 
 Precision on that class is the metric that governs deployment: a false positive
 puts a hosting provider in a call list and the tool loses the rep's trust. A
 false negative removes a company from the market invisibly.
 
-Sonnet 5 scored **higher accuracy (0.600) and worse precision (0.500)** — it
-commits where Haiku hedges, and decisiveness is the wrong disposition here.
-Higher accuracy, worse product.
+**The most useful thing this eval did was overturn its own earlier conclusion.**
+At 25 labels it ranked v3-on-Haiku first at 0.750 precision and argued against
+Sonnet at 0.500. At 75 labels that ordering completely inverts — Haiku falls to
+0.385 on held-out data and Sonnet leads at 0.667. Nothing changed but the
+number of labels.
 
-At n=25 most of these differences are one row. Only v3-over-v2 is defensible,
-because three metrics moved together on a fixed model. Full analysis and the
-caveats in [`evals/RESULTS.md`](evals/RESULTS.md).
+The caveat was written before the reversal: the n=25 report stated that support
+of 6 made one row worth 0.25 of precision and that only one comparison was
+defensible. That turned out to be the only reliable line in the table. The
+recommendation was reversed and the production run redone on Sonnet.
+
+Full analysis, the reversal, and what still doesn't hold at n=75 in
+[`evals/RESULTS.md`](evals/RESULTS.md).
 
 ## Running it
 
