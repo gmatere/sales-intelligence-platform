@@ -46,7 +46,7 @@ cheaply seekable. Forty minutes, twice. A recurring pipeline would pre-split.
 ### dbt owns every deterministic decision
 
 Casting, normalisation, entity grouping, exclusions, signals, scoring, tiering.
-Thirty-eight tests.
+Forty-eight tests.
 
 It lives here rather than in Python because these are set operations over
 columns, they need to be readable by someone who did not write them, and they

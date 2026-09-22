@@ -54,7 +54,7 @@ shodan.json.zst ─► ingest ─► Parquet ─► dbt/DuckDB ─► LLM ─►
 
 **Rules** handle everything structural: CVE severity, port exposure, certificate
 expiry, TLS versions, end-of-life software, honeypot and malware exclusion, the
-provider denylist, scoring and tiering. 38 dbt tests.
+provider denylist, scoring and tiering. 48 dbt tests.
 
 **The LLM** answers one question: *is this entity a company or infrastructure?*
 
@@ -163,7 +163,7 @@ run on a disposable instance rather than a laptop:
 pip install -r ingest/requirements.txt
 python ingest/ingest.py shodan.json.zst ./parquet     # ~40 min, resumable
 python ingest/validate.py ./parquet                    # profile the output
-cd dbt && DBT_PROFILES_DIR=. dbt seed && dbt build     # 38 tests
+cd dbt && DBT_PROFILES_DIR=. dbt seed && dbt build     # 48 tests
 cd ../llm && python classify.py --dry-run              # price before spending
 python classify.py --limit 3000 --prompt-version v4 --model claude-sonnet-5
 cd .. && python export_curated.py --prompt-version v4 --model claude-sonnet-5
@@ -182,7 +182,7 @@ python evals/run_eval.py --prompt-version v4 --model claude-sonnet-5
 | Path | |
 |---|---|
 | `ingest/` | streaming ingest, output profiler, raw-field inspector |
-| `dbt/` | staging → entity → signals → scoring, with 38 tests |
+| `dbt/` | staging → entity → signals → scoring, with 48 tests |
 | `prompts/v1..v4/` | versioned prompts; every trace names the pair that produced it |
 | `llm/` | classifier, trace schema, cost estimator, cache diagnostics |
 | `evals/` | labelled set, harness, per-configuration results |

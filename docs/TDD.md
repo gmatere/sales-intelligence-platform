@@ -104,7 +104,7 @@ in range, tiers from a fixed set) · **Uniqueness** (one row per entity) ·
 
 ### Checks and validations
 
-38 dbt tests. Column-level: `not_null`, `unique`, `accepted_values` on
+48 dbt tests. Column-level: `not_null`, `unique`, `accepted_values` on
 transport, entity source, rule class and tier. Four singular tests guard the
 failures that would actually cost something:
 
@@ -187,7 +187,7 @@ curated Parquet and deploys to Streamlit Community Cloud from the repo.
 | | Milestone | State |
 |---|---|---|
 | 1 | Ingest → Parquet, 58 columns, resumable | done |
-| 2 | dbt layer: staging → entity → signals → scores, 38 tests | done |
+| 2 | dbt layer: staging → entity → signals → scores, 48 tests | done |
 | 3 | Classifier: versioned prompt, structured output, tracing, dry-run | done |
 | 4 | Prompt v2 — few-shot, crosses cache floor, constrains output | next |
 | 5 | Labelled set (25) + eval harness + v1 vs v2 | next |
