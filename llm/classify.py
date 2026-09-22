@@ -109,12 +109,14 @@ def fetch_queue(limit: int | None) -> list[dict]:
     return rows
 
 
-def already_done(version: str) -> set[str]:
-    """Entities already classified *by this prompt version*.
+def already_done(version: str, model: str) -> set[str]:
+    """Entities already classified by this exact (prompt version, model) pair.
 
-    Keyed on version, not domain alone. Keying on domain would make a prompt
-    change unrunnable against entities the previous version had already seen —
-    which is precisely the comparison a versioned prompt exists to enable.
+    A configuration is the pair, not either half. Keying on prompt version
+    alone makes a model swap unrunnable against entities the previous model
+    already saw — and the same mistake, made in the trace analysis, silently
+    averaged two models together inside one version and produced a
+    meaningless number.
     """
     if not RESULTS.exists():
         return set()
@@ -124,7 +126,7 @@ def already_done(version: str) -> set[str]:
             row = json.loads(line)
         except json.JSONDecodeError:
             continue
-        if row.get("prompt_version") == version:
+        if row.get("prompt_version") == version and row.get("model") == model:
             done.add(row.get("entity_domain"))
     return done
 
@@ -217,8 +219,13 @@ class Classifier:
         self.tracer.write(trace)
         if not parsed:
             return None
+        # Record the model alongside the prompt version: the configuration is
+        # the pair. Without it a later run cannot tell which model produced a
+        # verdict, and resume cannot distinguish a model swap from a repeat.
         return {"entity_domain": row["entity_domain"],
-                "prompt_version": self.version, **parsed.model_dump()}
+                "prompt_version": self.version,
+                "model": self.model,
+                **parsed.model_dump()}
 
 
 # Markdown with punctuation and structure tokenises closer to 3.2 chars/token
@@ -291,16 +298,20 @@ def run(args) -> None:
         estimate(rows, args.prompt_version)
         return
 
-    done = already_done(args.prompt_version)
-    pending = [r for r in rows if r["entity_domain"] not in done]
-    print(f"{len(rows):,} in queue, {len(done):,} already classified on "
-          f"{args.prompt_version}, {len(pending):,} to do")
-    if not pending:
-        return
-
     RESULTS.parent.mkdir(parents=True, exist_ok=True)
     tracer = TraceWriter(TRACES)
     classifier = Classifier(args.prompt_version, tracer)
+    if args.model:
+        classifier.model = args.model
+
+    done = already_done(args.prompt_version, classifier.model)
+    pending = [r for r in rows if r["entity_domain"] not in done]
+    print(f"{len(rows):,} in queue, {len(done):,} already classified on "
+          f"{args.prompt_version} / {classifier.model}, {len(pending):,} to do")
+    if not pending:
+        tracer.close()
+        return
+
     written = 0
 
     with RESULTS.open("a", encoding="utf-8") as sink:
@@ -327,6 +338,8 @@ def main() -> None:
                         help="price the run without calling the API")
     parser.add_argument("--limit", type=int, default=None)
     parser.add_argument("--prompt-version", default="v1")
+    parser.add_argument("--model", default=None,
+                        help="override the model named in the prompt frontmatter")
     run(parser.parse_args())
 
 
