@@ -13,7 +13,7 @@ reasoning that survived contact with the data.
 ```
 shodan.json.zst ─► ingest ─► Parquet ─► dbt/DuckDB ─► LLM ─► curated ─► Streamlit
    12.4 GB        stream &   8.9M rows  rules, tests  entity  Parquet    hosted,
-                  project 58            & scoring     class.  few k rows no API key
+                  project 50            & scoring     class.  few k rows no API key
    ├──────────────── disposable compute instance ─────────────┤  ├─ laptop ─┤
 ```
 
@@ -27,7 +27,7 @@ few megabytes of derived business data.
 ### Ingest projects, and does nothing else
 
 No scoring, no filtering, no deduplication, no business logic. It streams,
-flattens and writes 58 columns.
+flattens and writes 50 columns.
 
 The forcing constraint: the decompressed source is roughly **74 GB** and the
 processing instance has about **64 GB free**. It does not fit. `zstd -d` fails

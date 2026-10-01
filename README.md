@@ -40,12 +40,12 @@ organisations**, none of them infrastructure.
 ```
 shodan.json.zst ─► ingest ─► Parquet ─► dbt/DuckDB ─► LLM ─► curated ─► Streamlit
    12.4 GB        stream &   8.9M rows  rules, tests  entity  Parquet    hosted,
-                  project 58            & scoring     class.  few k rows no API key
+                  project 50            & scoring     class.  few k rows no API key
 ```
 
 | Layer | Does | Why there |
 |---|---|---|
-| Ingest | Streams zstd, projects 58 columns, writes Parquet | The decompressed source is ~74 GB and the processing box has 64 GB free — it does not fit, so it is never materialised |
+| Ingest | Streams zstd, projects 50 columns, writes Parquet | The decompressed source is ~74 GB and the processing box has 64 GB free — it does not fit, so it is never materialised |
 | dbt on DuckDB | Casts, groups to entities, excludes, scores | All business logic in one tested place; rescoring reruns in seconds instead of re-reading 74 GB |
 | LLM | Classifies entities rules cannot resolve | The only question rules cannot answer |
 | Streamlit | Filters and explains a precomputed Parquet | No inference at request time, no credentials in deployment |

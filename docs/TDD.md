@@ -52,12 +52,12 @@ that a rep can defend on a call.
 ```
 shodan.json.zst ──► ingest ──► Parquet ──► dbt/DuckDB ──► LLM ──► curated ──► Streamlit
    12.4 GB         stream &    8.9M rows   rules, tests   entity   Parquet     hosted,
-                   project 58              & scoring      class.   few k rows  no API key
+                   project 50              & scoring      class.   few k rows  no API key
 ```
 
 | Layer | Responsibility | Why here |
 |---|---|---|
-| Ingest | Stream-decompress, project 58 columns, Parquet shards | One expensive read; resumable; never materialises 74 GB |
+| Ingest | Stream-decompress, project 50 columns, Parquet shards | One expensive read; resumable; never materialises 74 GB |
 | dbt on DuckDB | Cast, normalise, group to entities, exclude, score | All business logic in one testable place |
 | LLM | Classify entities rules cannot resolve | The only question rules cannot answer |
 | Serving | Precomputed Parquet → Streamlit | No runtime inference, no secrets in deployment |
@@ -186,7 +186,7 @@ curated Parquet and deploys to Streamlit Community Cloud from the repo.
 
 | | Milestone | State |
 |---|---|---|
-| 1 | Ingest → Parquet, 58 columns, resumable | done |
+| 1 | Ingest → Parquet, 50 columns, resumable | done |
 | 2 | dbt layer: staging → entity → signals → scores, 48 tests | done |
 | 3 | Classifier: versioned prompt, structured output, tracing, dry-run | done |
 | 4 | Prompt v2 — few-shot, crosses cache floor, constrains output | next |
