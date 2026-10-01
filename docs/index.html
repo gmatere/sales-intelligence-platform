@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sales Intelligence Platform — Architecture</title>
+<style>
+  :root{
+    --sidebar:#101b2d; --sidebar-2:#0b1422;
+    --accent:#f4442e; --accent-soft:#ffe9e5; --accent-dark:#c9321f;
+    --ink:#0f172a; --muted:#5b6b80; --faint:#8798ab;
+    --line:#e6eaf0; --card:#fbfcfd;
+    --blue:#3b7fc4; --blue-soft:#eef4fb;
+    --purple:#6c4ee0; --green:#1a9f6b;
+    --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,monospace;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; display:flex; min-height:100vh;
+    font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    color:var(--ink); background:#fff; -webkit-font-smoothing:antialiased;
+  }
+
+  /* ---------- sidebar ---------- */
+  aside{
+    width:300px; flex:0 0 300px; background:var(--sidebar); color:#fff;
+    display:flex; flex-direction:column; position:sticky; top:0; height:100vh;
+  }
+  .brand{display:flex; gap:12px; align-items:center; padding:22px 20px 20px}
+  .logo{
+    width:38px; height:38px; border-radius:9px; background:var(--accent);
+    display:grid; place-items:center; font-weight:700; font-size:13px; letter-spacing:.5px;
+  }
+  .brand h1{font-size:16px; margin:0 0 2px; font-weight:650}
+  .brand p{margin:0; font-size:11.5px; color:var(--faint)}
+  .search{padding:0 20px 18px}
+  .search input{
+    width:100%; padding:9px 12px 9px 32px; border-radius:8px; font-size:13px;
+    background:var(--sidebar-2); border:1px solid #1e2b40; color:#fff;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='none' stroke='%238798ab' stroke-width='2'><circle cx='6' cy='6' r='4.5'/><path d='M9.5 9.5 13 13'/></svg>");
+    background-repeat:no-repeat; background-position:10px 50%;
+  }
+  .search input::placeholder{color:#6d7d92}
+  nav{overflow-y:auto; padding-bottom:16px; flex:1}
+  .group{padding:14px 20px 6px; font-size:10.5px; letter-spacing:.9px;
+         text-transform:uppercase; color:#6d7d92; font-weight:650}
+  nav a{
+    display:flex; gap:11px; align-items:flex-start; padding:9px 20px; margin:1px 12px;
+    border-radius:8px; color:#c3cfdd; text-decoration:none; font-size:13.5px; line-height:1.35;
+  }
+  nav a:hover{background:#17243a; color:#fff}
+  nav a.on{background:var(--accent); color:#fff; font-weight:600}
+  nav a .ic{opacity:.85; flex:0 0 14px; margin-top:1px}
+  .side-foot{padding:16px 20px; border-top:1px solid #1b2739; font-size:11px; color:#6d7d92}
+  .side-foot b{color:#9db0c6; font-weight:550}
+
+  /* ---------- main ---------- */
+  main{flex:1; min-width:0; padding:40px 56px 90px; max-width:1060px}
+  .eyebrow{
+    display:inline-block; background:var(--accent-soft); color:var(--accent-dark);
+    font-size:11px; font-weight:700; letter-spacing:1.1px; text-transform:uppercase;
+    padding:7px 14px; border-radius:100px; margin-bottom:22px;
+  }
+  h2.title{font-size:40px; line-height:1.1; margin:0 0 18px; letter-spacing:-1px; font-weight:730}
+  .lead{font-size:17.5px; line-height:1.62; color:var(--muted); max-width:720px; margin:0 0 30px}
+  hr{border:0; border-top:1px solid var(--line); margin:30px 0}
+  h3{font-size:23px; margin:42px 0 16px; letter-spacing:-.3px; font-weight:680}
+  h4{font-size:15px; margin:28px 0 8px; font-weight:650}
+  p{line-height:1.68; color:#2f3d4f}
+  main a{color:var(--accent); text-decoration:none; font-weight:550}
+  main a:hover{text-decoration:underline}
+  code{font-family:var(--mono); font-size:12.5px; background:#f1f4f8;
+       padding:2px 6px; border-radius:4px; color:#1f2b3d}
+
+  /* flow diagram */
+  .flowwrap{border:1px solid var(--line); border-radius:14px; padding:30px; background:#fcfdfe}
+  .flow{display:flex; gap:10px; align-items:stretch}
+  .stage{
+    flex:1; border:1.5px solid; border-radius:10px; padding:14px 15px; background:#fff; min-width:0;
+  }
+  .stage h5{margin:0 0 7px; font-size:13.5px; display:flex; gap:7px; align-items:center; font-weight:650}
+  .stage p{margin:0 0 9px; font-size:11.5px; line-height:1.5; color:var(--muted)}
+  .stage .metric{font-size:11.5px; font-weight:700; color:var(--ink)}
+  .arrow{display:grid; place-items:center; color:#b9c4d2; font-size:17px; flex:0 0 14px}
+  .band{
+    margin-top:14px; background:var(--sidebar); color:#fff; border-radius:10px;
+    padding:14px 18px; text-align:center;
+  }
+  .band b{font-size:13px; display:block; margin-bottom:4px; font-weight:650}
+  .band span{font-size:11.5px; color:#9db0c6}
+  .cap{text-align:center; font-size:12.5px; color:var(--faint); margin:14px 0 0}
+
+  /* metric strip */
+  .metrics{display:grid; grid-template-columns:repeat(6,1fr); gap:12px; margin:34px 0 10px}
+  .met{border:1px solid var(--line); border-radius:11px; padding:18px 15px; background:var(--card)}
+  .met b{display:block; font-size:27px; letter-spacing:-1px; margin-bottom:6px; font-weight:720}
+  .met span{font-size:10.5px; letter-spacing:.7px; text-transform:uppercase;
+            color:var(--faint); line-height:1.4; display:block; font-weight:600}
+
+  /* cards */
+  .cards{display:grid; grid-template-columns:repeat(3,1fr); gap:18px; margin-top:20px}
+  .card{border:1px solid var(--line); border-radius:12px; padding:22px; background:#fff}
+  .card .ic{font-size:17px; margin-bottom:14px; display:block}
+  .card h5{margin:0 0 9px; font-size:16px; font-weight:650}
+  .card p{margin:0 0 13px; font-size:13.5px; line-height:1.6; color:var(--muted)}
+  .card .go{font-size:13px; font-weight:600; color:var(--accent); cursor:pointer}
+
+  /* callout */
+  .note{
+    background:var(--blue-soft); border-left:4px solid var(--blue); border-radius:0 8px 8px 0;
+    padding:17px 20px; margin:34px 0 0; font-size:14px; line-height:1.65; color:#28394d;
+  }
+  .note.warn{background:#fff6ed; border-left-color:#e08521}
+  .note.bad{background:#fef0ee; border-left-color:var(--accent)}
+  .note.good{background:#edfaf3; border-left-color:var(--green)}
+  .note code{background:#fff; color:var(--accent-dark)}
+
+  /* breadcrumb */
+  .crumb{font-size:13px; color:var(--faint); margin:0 0 18px}
+  .crumb span{cursor:pointer; color:var(--muted)}
+  .crumb span:hover{color:var(--accent)}
+
+  /* in-page jump pills */
+  .jumps{display:flex; gap:9px; flex-wrap:wrap; margin:0 0 8px}
+  .jumps a{
+    font-size:13px; font-weight:600; border:1px solid var(--line); border-radius:100px;
+    padding:9px 17px; color:var(--ink); background:#fff; text-decoration:none;
+  }
+  .jumps a:hover{border-color:var(--accent); color:var(--accent); text-decoration:none}
+
+  /* inline badge next to a heading */
+  .tagline{
+    display:inline-block; vertical-align:middle; margin-left:11px; font-size:11.5px;
+    font-weight:650; padding:5px 11px; border-radius:100px;
+    background:#efeaff; color:#5b3fd0;
+  }
+  .tagline.g{background:#e6f6ee; color:#15855a}
+  .tagline.r{background:var(--accent-soft); color:var(--accent-dark)}
+
+  /* left-border reason cards */
+  .lcards{display:grid; grid-template-columns:repeat(3,1fr); gap:18px; margin:20px 0 0}
+  .lcard{
+    border:1px solid var(--line); border-left:4px solid var(--muted); border-radius:4px 11px 11px 4px;
+    padding:19px 21px; background:#fff;
+  }
+  .lcard h5{margin:0 0 10px; font-size:15.5px; font-weight:660; line-height:1.3}
+  .lcard p{margin:0; font-size:13.5px; line-height:1.62; color:var(--muted)}
+  .lcard code{font-size:11.5px; background:#fdf0ee; color:var(--accent-dark)}
+  @media(max-width:1100px){.lcards{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:820px){.lcards{grid-template-columns:1fr}}
+
+  /* resource chip grid */
+  .chips{display:grid; grid-template-columns:repeat(4,1fr); gap:11px; margin:18px 0 0}
+  .chip{
+    border:1px solid var(--line); border-radius:10px; padding:13px 14px; background:#fff;
+    display:flex; gap:11px; align-items:flex-start;
+  }
+  .chip .tag{
+    flex:0 0 28px; height:28px; border-radius:7px; background:#e8f0fb; color:#2f6db5;
+    display:grid; place-items:center; font-size:10px; font-weight:750; letter-spacing:.3px;
+  }
+  .chip .tag.sq{background:#efeaff; color:#5b3fd0}
+  .chip .tag.gn{background:#e6f6ee; color:#15855a}
+  .chip b{display:block; font-size:13px; margin-bottom:2px; font-weight:650}
+  .chip span{font-size:11.5px; color:var(--faint); line-height:1.4}
+  @media(max-width:1100px){.chips{grid-template-columns:repeat(2,1fr)}}
+
+  /* tables */
+  table{width:100%; border-collapse:collapse; margin:18px 0; font-size:13.5px}
+  th,td{text-align:left; padding:10px 13px; border-bottom:1px solid var(--line); vertical-align:top}
+  th{font-size:11px; letter-spacing:.7px; text-transform:uppercase; color:var(--faint); font-weight:650}
+  td.num,th.num{text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap}
+  tr.hi td{background:#fffaf4}
+
+  pre{
+    background:var(--sidebar); color:#d7e1ec; padding:17px 19px; border-radius:10px;
+    overflow-x:auto; font-family:var(--mono); font-size:12px; line-height:1.65;
+  }
+  .page{display:none} .page.on{display:block}
+  .pillrow{display:flex; gap:8px; flex-wrap:wrap; margin:14px 0 0}
+  .pill{font-size:11.5px; border:1px solid var(--line); border-radius:100px;
+        padding:5px 12px; color:var(--muted); background:#fff}
+  @media(max-width:1100px){
+    .metrics{grid-template-columns:repeat(3,1fr)}
+    .cards{grid-template-columns:repeat(2,1fr)}
+    .flow{flex-direction:column} .arrow{transform:rotate(90deg); height:16px}
+  }
+  @media(max-width:820px){
+    body{flex-direction:column} aside{width:100%; flex:none; height:auto; position:static}
+    main{padding:28px 22px 70px} h2.title{font-size:30px}
+    .metrics{grid-template-columns:repeat(2,1fr)} .cards{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+
+<aside>
+  <div class="brand">
+    <div class="logo">SI</div>
+    <div><h1>Sales Intelligence</h1><p>Firmable case study · Data Engineering</p></div>
+  </div>
+  <div class="search"><input id="q" placeholder="Search pages, stages, numbers..."></div>
+  <nav id="nav">
+    <div class="group">Start here</div>
+    <a data-p="overview" class="on"><span class="ic">⌂</span> Overview</a>
+    <div class="group">The pipeline</div>
+    <a data-p="ingest"><span class="ic">◉</span> Ingest &amp; Entity Resolution</a>
+    <a data-p="transform"><span class="ic">⇄</span> Transform &amp; Scoring</a>
+    <a data-p="llm"><span class="ic">◆</span> Classification (LLM)</a>
+    <a data-p="serve"><span class="ic">▣</span> Serving &amp; App</a>
+    <div class="group">Evidence</div>
+    <a data-p="evals"><span class="ic">↗</span> Evals &amp; Measured Quality</a>
+    <a data-p="cost"><span class="ic">◧</span> Cost Model</a>
+    <div class="group">Honesty</div>
+    <a data-p="limits"><span class="ic">⚑</span> Known Limitations</a>
+    <a data-p="scale"><span class="ic">⬈</span> Scaling to 10×</a>
+  </nav>
+  <div class="side-foot">
+    Source: <b>sales-intelligence-platform</b><br>Shipped <b>v4 · claude-sonnet-5</b>
+  </div>
+</aside>
+
+<main>
+
+<!-- ============ OVERVIEW ============ -->
+<section class="page on" id="overview">
+  <span class="eyebrow">AI Sales Intelligence</span>
+  <h2 class="title">Sales Intelligence Platform</h2>
+  <p class="lead">How 8.9 million internet-exposure scan records become a ranked, explainable
+  prospect list — every stage, what it decides, and what it costs. Written for someone who
+  needs the real picture, including the parts that don't work.</p>
+  <hr>
+
+  <div class="flowwrap">
+    <div class="flow">
+      <div class="stage" style="border-color:var(--purple)">
+        <h5><span style="color:var(--purple)">◉</span> Ingest</h5>
+        <p>Stream zstd, flatten, project 50 columns to Parquet shards</p>
+        <div class="metric">8.9M records</div>
+      </div>
+      <div class="arrow">→</div>
+      <div class="stage" style="border-color:var(--blue)">
+        <h5><span style="color:var(--blue)">⇄</span> Transform</h5>
+        <p>dbt on DuckDB — entities, exclusions, signals, scoring</p>
+        <div class="metric">6 models · 48 tests</div>
+      </div>
+      <div class="arrow">→</div>
+      <div class="stage" style="border-color:var(--green)">
+        <h5><span style="color:var(--green)">◆</span> Classify</h5>
+        <p>One LLM call per unresolved entity — company or infrastructure?</p>
+        <div class="metric">3,000 classified</div>
+      </div>
+      <div class="arrow">→</div>
+      <div class="stage" style="border-color:var(--accent)">
+        <h5><span style="color:var(--accent)">▣</span> Serve</h5>
+        <p>Curated Parquet → Streamlit. No inference at request time</p>
+        <div class="metric">1,005 organisations</div>
+      </div>
+    </div>
+    <div class="band">
+      <b>Measurement &amp; Tracing</b>
+      <span>75-example eval set · per-call traces · 21-entry decision log — applies across every stage above</span>
+    </div>
+  </div>
+  <p class="cap">The pipeline as built, not as planned. Two stages were rebuilt after reading their output.</p>
+
+  <div class="metrics">
+    <div class="met"><b>8.9M</b><span>Source records</span></div>
+    <div class="met"><b>252,078</b><span>Entities resolved</span></div>
+    <div class="met"><b>1,005</b><span>Confirmed organisations</span></div>
+    <div class="met"><b>0.765</b><span>Precision, is-a-company</span></div>
+    <div class="met"><b>48</b><span>dbt tests</span></div>
+    <div class="met"><b>$0.0037</b><span>Cost per entity</span></div>
+  </div>
+
+  <h3>Start Here</h3>
+  <div class="cards">
+    <div class="card"><span class="ic">◉</span>
+      <h5>Ingest &amp; Entity Resolution</h5>
+      <p>74 GB decompressed onto a box with 64 GB free. And the field naming who owns each IP is 31% Google.</p>
+      <span class="go" data-go="ingest">The hard part →</span></div>
+    <div class="card"><span class="ic">⇄</span>
+      <h5>Transform &amp; Scoring</h5>
+      <p>Every deterministic decision in SQL. Fit and intent scored separately, then crossed into tiers.</p>
+      <span class="go" data-go="transform">See the logic →</span></div>
+    <div class="card"><span class="ic">◆</span>
+      <h5>Classification</h5>
+      <p>The LLM answers exactly one question. Why that one, and why rules cannot answer it.</p>
+      <span class="go" data-go="llm">The asymmetry →</span></div>
+  </div>
+  <div class="cards" style="margin-top:18px">
+    <div class="card"><span class="ic">↗</span>
+      <h5>Evals &amp; Measured Quality</h5>
+      <p>75 hand-labelled entities. The eval overturned its own recommendation twice.</p>
+      <span class="go" data-go="evals">What it measures →</span></div>
+    <div class="card"><span class="ic">⚑</span>
+      <h5>Known Limitations</h5>
+      <p>What doesn't work, by layer — including a school that was silently dropped from the market.</p>
+      <span class="go" data-go="limits">Read the gaps →</span></div>
+    <div class="card"><span class="ic">⬈</span>
+      <h5>Scaling to 10×</h5>
+      <p>Two layers hold, two need restructuring, and DuckDB stops being the right tool.</p>
+      <span class="go" data-go="scale">At 89M records →</span></div>
+  </div>
+
+  <div class="note"><b>New here?</b> Read the sidebar top to bottom — each page builds on the last.
+  If you have ten minutes, read <a data-go="ingest">Ingest</a> and
+  <a data-go="evals">Evals</a>: the first explains why this problem is hard, the second
+  explains how much to trust the answer.</div>
+</section>
+
+<!-- ============ INGEST ============ -->
+<section class="page" id="ingest">
+  <p class="crumb"><span data-go="overview">Overview</span> / Ingest &amp; Entity Resolution</p>
+  <span class="eyebrow">8.9M records · 50 columns</span>
+  <h2 class="title">Ingest &amp; Entity Resolution</h2>
+  <p class="lead">The dataset describes machines. A sales team needs companies. Everything
+  difficult about this project lives in that gap.</p>
+  <hr>
+
+  <h3>The dataset is not what the brief implied</h3>
+  <p>Profiling the first 8 MB settled the product direction before any code was written. It is
+  not company data — it is internet scan records, one row per exposed service on an IP address.
+  That makes it <b>intent data, not fit data</b>: almost nothing about company size or industry,
+  a great deal about what is broken right now.</p>
+
+  <h3>The trap</h3>
+  <p>The <code>org</code> field names whoever registered the IP block — not the company using it.</p>
+<pre>Google LLC         2,745,419   30.8%
+Incapsula Inc      1,778,843   20.0%
+Cloudflare, Inc.     302,449
+Amazon.com, Inc.     287,584</pre>
+  <p>Group by <code>org</code> and your top prospects are Google, Imperva and Amazon — worthless
+  to a rep and instantly disqualifying. So the entity key is the <b>registrable domain</b>
+  (eTLD+1) from reverse-DNS hostnames, with the TLS certificate CN as a secondary anchor.
+  <code>org</code> is used only to match the infrastructure denylist.</p>
+
+  <h3>Why it streams</h3>
+  <p>The source is 12.36 GB compressed and ~74 GB decompressed — a 6.03× ratio — on a box with
+  about 64 GB free. <b>It does not fit.</b> <code>zstd -d</code> fails outright, so decompression
+  is incremental and the JSON is never materialised. Memory stays flat regardless of input size.</p>
+  <div class="note"><b>The design decision mattered more than the constraint.</b> Ingest is a pure
+  projection — no scoring, no filtering, no business logic. So the one expensive read produces a
+  reusable artifact, and every later change to scoring reruns against Parquet in seconds instead
+  of re-reading 74 GB.</div>
+
+  <div class="metrics" style="grid-template-columns:repeat(4,1fr)">
+    <div class="met"><b>12.36 GB</b><span>Compressed source</span></div>
+    <div class="met"><b>~74 GB</b><span>Decompressed</span></div>
+    <div class="met"><b>50</b><span>Columns projected</span></div>
+    <div class="met"><b>73.5%</b><span>Domain coverage</span></div>
+  </div>
+
+  <h3>What it cost us</h3>
+  <div class="note bad"><b>Truncated Parquet counted as complete.</b> Shards were written straight
+  to their final filename. Parquet writes its footer last, so a crash mid-write left a truncated
+  file that the resume glob counted as done — silently skipping 100,000 records. Found by accident:
+  reading the output directory mid-run raised <code>No magic bytes found at end of file
+  part-00006.parquet</code>. Fixed with a staged write to <code>.part-NNNNN.inflight</code> and an
+  atomic rename.</div>
+</section>
+
+<!-- ============ TRANSFORM ============ -->
+<section class="page" id="transform">
+  <p class="crumb"><span data-go="overview">Overview</span> / Transform &amp; Scoring</p>
+  <span class="eyebrow">6 models · 48 tests</span>
+  <h2 class="title">Transform &amp; Scoring</h2>
+  <p class="lead">Every deterministic decision lives in dbt on DuckDB — grouped by what it decides,
+  not by table. These are set operations over columns; they need to be readable by someone who
+  didn't write them, and tested as part of the build rather than by a suite someone remembers to
+  invoke.</p>
+
+  <div class="jumps">
+    <a href="#t-models">The models</a>
+    <a href="#t-rules">Rule tier</a>
+    <a href="#t-scoring">Scoring</a>
+    <a href="#t-epss">EPSS over CVSS</a>
+  </div>
+  <hr>
+
+  <h3 id="t-models">The models <span class="tagline">staging → intermediate → marts</span></h3>
+  <div class="chips">
+    <div class="chip"><div class="tag sq">SQL</div><div>
+      <b>stg_hosts</b><span>Cast and normalise only</span></div></div>
+    <div class="chip"><div class="tag sq">SQL</div><div>
+      <b>int_entity_hosts</b><span>Group hosts into entities</span></div></div>
+    <div class="chip"><div class="tag sq">SQL</div><div>
+      <b>int_entity_classification</b><span>Rule-based exclusion</span></div></div>
+    <div class="chip"><div class="tag gn">MART</div><div>
+      <b>company_signals</b><span>Aggregate security findings</span></div></div>
+    <div class="chip"><div class="tag gn">MART</div><div>
+      <b>company_scores</b><span>Fit + intent, tiering</span></div></div>
+    <div class="chip"><div class="tag gn">MART</div><div>
+      <b>llm_classification_queue</b><span>What is worth a model call</span></div></div>
+  </div>
+  <p>Four of the 48 tests guard failures that would actually cost something: infrastructure
+  reaching a rep's list, unclassified entities being treated as prospects, honeypots surviving into
+  the entity table, and scores drifting outside their range. The rest are schema hygiene.</p>
+
+  <h3 id="t-rules">Why five rule families, not one denylist</h3>
+  <p>125,037 of 252,078 entities are excluded here. A curated list of provider names cannot reach
+  the long tail of regional hosts — there are thousands of them, and adding the ones visible in a
+  sample would overfit to that sample. So four behavioural heuristics sit alongside the list, each
+  catching a different shape of infrastructure.</p>
+  <div class="lcards">
+    <div class="lcard" style="border-left-color:var(--purple)">
+      <h5>reverse_dns_zone — definitional</h5>
+      <p>The entity <i>is</i> a <code>.in-addr.arpa</code> zone. Not a company by construction;
+      no judgement required.</p></div>
+    <div class="lcard" style="border-left-color:var(--blue)">
+      <h5>seed_list — ~70 named providers</h5>
+      <p>Matched against normalised <code>org</code> strings, because the source carries the same
+      company under several spellings — <code>Incapsula Inc</code> and <code>Incapsula Inc.</code>
+      are 1.8M and 62k records respectively.</p></div>
+    <div class="lcard" style="border-left-color:var(--green)">
+      <h5>cloud_tag_volume — scale + cloud</h5>
+      <p><code>cloud_host_ratio ≥ 0.9 AND n_hosts ≥ 50</code>. Catches providers absent from the
+      seed list. Both numbers chosen by inspection, not tuned — the LLM tier absorbs the
+      imprecision.</p></div>
+    <div class="lcard" style="border-left-color:#e08521">
+      <h5>sequential_hostnames — machine naming</h5>
+      <p><code>srv12.</code>, <code>vps-104.</code> — customer-premises equipment is machine-named
+      throughout, while municipal and ministry estates are small and hand-named.</p></div>
+    <div class="lcard" style="border-left-color:var(--accent)">
+      <h5>port_diversity — multi-tenancy</h5>
+      <p><code>n_hosts ≥ 20 AND n_ports ≥ 20</code>. A single company rarely exposes twenty
+      distinct services across twenty hosts; a shared host does.</p></div>
+    <div class="lcard" style="border-left-color:var(--faint)">
+      <h5>Everything else → the model</h5>
+      <p>127,041 entities survive the rules. They are not "companies" — they are
+      <b>unresolved</b>, and that distinction is the whole design.</p></div>
+  </div>
+
+  <div class="note good"><b>Prefer an extra model call to a silent exclusion.</b> The sequential-name
+  threshold was raised from 0.6 to 0.8 after sampling: two random samples of 25 excluded entities
+  each contained one false positive — <code>esteri.it</code> at 0.64 (Italian Ministry of Foreign
+  Affairs) and <code>hajnowka.pl</code> at 0.62 (a Polish municipality) — while every unambiguous
+  ISP sat at 0.79–1.00. An excluded company is never reviewed and never recovers; an extra
+  classification costs a fraction of a cent. That asymmetry sets the threshold.</div>
+
+  <h3 id="t-scoring">Two scores, deliberately not one</h3>
+  <p><b>Intent</b> — how urgently they need help: exploitation probability, critical CVEs, exposed
+  datastores, remote access, end-of-life software, certificate state, TLS posture.
+  <b>Fit</b> — how well they match the ICP: estate size band, whitespace, real estate,
+  multi-market presence, security maturity. Crossed into tiers A/B/C/D, plus
+  <code>R - needs review</code>, <code>U - unclassified</code> and <code>X - not a prospect</code>.</p>
+  <p>Every component is kept as its own column, so the weights can be refitted against real
+  outcomes later — and so a rep can disagree with a ranking by seeing what drove it.</p>
+
+  <h3 id="t-epss">Why EPSS, not CVSS or CVE counts</h3>
+  <p>Every CVE in this dataset is <b>version-inferred, never tested</b>. Shodan matches a detected
+  version against advisories; <code>verified</code> was false on <b>100% of 7,066 sampled CVE
+  entries</b>. So a host reporting 99 CVEs may have every one of them patched.</p>
+  <table>
+    <tr><th>Host</th><th class="num">Max CVSS</th><th class="num">EPSS</th><th>Urgency</th></tr>
+    <tr class="hi"><td>Host A</td><td class="num">9.8</td><td class="num">0.99999</td><td>Being exploited now</td></tr>
+    <tr><td>Host B</td><td class="num">9.8</td><td class="num">0.01225</td><td>Effectively dormant</td></tr>
+  </table>
+  <p>Identical severity, completely different urgency. A CVSS-ordered list treats them as
+  equivalent. EPSS is a published probability about the <i>vulnerability</i> rather than an
+  inference about <i>this host</i>, so it survives the same uncertainty.</p>
+
+  <div class="note bad"><b>Tier A filled with hosting providers.</b> The first build's top 20 were
+  Beget, Forpsi, startdedicated, vps-10, hostsila and the reverse-DNS zone
+  <code>64.in-addr.arpa</code> — all scoring 90 fit and 100 intent, because a multi-tenant estate
+  accumulates every finding belonging to every tenant. <b>The scores were correct; the inference
+  drawn from them was not.</b> The tiering logic read "rules found no evidence of infrastructure"
+  as "confirmed company". No test caught it — the SQL was right and every schema test passed.
+  Fixed by gating tiers on classification status.</div>
+</section>
+
+<!-- ============ LLM ============ -->
+<section class="page" id="llm">
+  <p class="crumb"><span data-go="overview">Overview</span> / Classification</p>
+  <span class="eyebrow">6 classes · 3,000 classified</span>
+  <h2 class="title">Classification</h2>
+  <p class="lead">The LLM answers exactly one question: is this entity a real company, or is it
+  infrastructure? Everything else in the pipeline is SQL.</p>
+  <hr>
+
+  <h3>Why a model is here at all <span class="tagline r">the asymmetry</span></h3>
+  <p>The boundary is set by an asymmetry, not by taste.</p>
+  <div class="note"><b>Rules can prove an entity <i>is</i> infrastructure</b> — a seed match, a
+  reverse-DNS zone, machine-named hosts across a large estate. <b>Nothing can prove it
+  <i>is not</i>.</b> A regional hosting provider nobody has heard of looks exactly like a small
+  business until someone reads the name.</div>
+  <p>So rules settle the provable half, and anything unresolved sits in
+  <code>U - unclassified</code> and cannot reach a rep until the model adjudicates it.</p>
+
+  <div class="pillrow">
+    <span class="pill">end_customer_company</span><span class="pill">hosting_or_cloud</span>
+    <span class="pill">cdn_or_security_vendor</span><span class="pill">isp_telco</span>
+    <span class="pill">government_or_education</span><span class="pill">unknown</span>
+  </div>
+
+  <h3>How it runs</h3>
+  <p>Tool-use against a fixed schema — never free text. Three retries with exponential backoff,
+  concurrency 8, resume keyed on the <b>(prompt version, model) pair</b>, and a dry-run estimator
+  that prices the work before spending and reports whether caching will engage.</p>
+  <p>Every call appends a trace: prompt version, model, decision, confidence, input / output /
+  cached / cache-write tokens, cost, latency, attempt, error.</p>
+
+  <h3>The funnel is the cost model <span class="tagline">see Cost Model</span></h3>
+<pre>Naive — one call per source record         8,914,693 × ~2,000 tok  ≈ $17,800
+
+Designed
+  8,914,693 records
+  →   252,078 entities        aggregation
+  →   127,041 unresolved      rule tier removed 125,037
+  →    43,577 queued          signal filter removed 83,464   ≈ $161</pre>
+  <p><b>The bigger lever is the signal filter, not the rules.</b> An entity with no security
+  findings is not a prospect whether or not it is a real company, so classifying it buys nothing —
+  and that filter is a <code>WHERE</code> clause on an aggregate, not a model call.</p>
+
+  <div class="note bad"><b>A school was silently dropped from the market.</b>
+  <code>entity_class</code> was typed <code>str</code>; the permitted values lived only in the tool
+  schema's <code>enum</code>, which is advisory without <code>strict: true</code>. One call in 3,000
+  returned <code>education</code> instead of <code>government_or_education</code> — a Brazilian
+  school, correctly named, at <b>confidence 0.9</b> — and the tier logic matches class names exactly,
+  so it fell through to <code>X - not a prospect</code> with nothing recording it. Fixed at both
+  layers: <code>entity_class</code> is now a <code>Literal</code> that raises and retries, and the
+  export refuses to run on any unrecognised class rather than bucketing it.</div>
+</section>
+
+<!-- ============ SERVE ============ -->
+<section class="page" id="serve">
+  <p class="crumb"><span data-go="overview">Overview</span> / Serving &amp; App</p>
+  <span class="eyebrow">1,005 organisations</span>
+  <h2 class="title">Serving &amp; App</h2>
+  <p class="lead">A curated Parquet and a Streamlit app that performs no inference and holds no
+  credentials.</p>
+  <hr>
+
+  <h3>The boundary between pipeline and product</h3>
+  <p>Three things happen in the export and nowhere else. Classification verdicts are merged in, so
+  tiers can finally be assigned. Raw IP addresses are dropped — a rep needs the company, the
+  finding and the reason to call, never an address. And per-call telemetry is joined on, so the app
+  can show the real trace of the decision.</p>
+  <p>The export filters to exactly one <b>(prompt version, model)</b> configuration: the one the
+  eval measured.</p>
+
+  <h3>Three questions per account</h3>
+  <table>
+    <tr><th>Question</th><th>Answered by</th></tr>
+    <tr><td><b>Why this account</b></td><td>Fit score, with every scoring component shown</td></tr>
+    <tr><td><b>Why now</b></td><td>Findings, each tagged with its evidence class</td></tr>
+    <tr><td><b>What do I say</b></td><td>Drafted outreach — cold email, InMail, or call script</td></tr>
+  </table>
+
+  <h3>The evidence distinction</h3>
+  <p><b>Observed</b> — seen directly in the scan. <b>Tested</b> — confirmed by an active probe.
+  <b>Inferred</b> — implied by a version banner; the software is confirmed, the vulnerability is
+  not. Collapsing those is how a rep ends up asserting a vulnerability that was never confirmed.</p>
+
+  <div class="note bad"><b>A generated email made a false technical claim.</b> The draft asserted
+  "you are running Apache httpd, a version associated with CVE-2015-0235". CVE-2015-0235 is GHOST —
+  a <b>glibc</b> bug, not an Apache one. Both values came from
+  <code>arg_max(..., top_cve_epss)</code> but were picked <i>independently</i>, so they can come
+  from different services on the same host. Every value was correct; the sentence was not. Caught
+  by reading three generated openers aloud. The opener no longer asserts the product alongside the
+  CVE — it cites the finding, states that it is inferred, and asks the recipient to confirm.</div>
+
+  <div class="note warn"><b>The outreach is templated, not generated.</b> An LLM would write better
+  prose, but the binding constraint is accuracy: every claim must trace to an observed fact, and
+  hedging on version-inferred CVEs must be exact. Template assembly guarantees that; generation
+  would need its own eval to guarantee it. Logged as the next increment, not skipped by accident.</div>
+</section>
+
+<!-- ============ EVALS ============ -->
+<section class="page" id="evals">
+  <p class="crumb"><span data-go="overview">Overview</span> / Evals</p>
+  <span class="eyebrow">75 labels · 5 configurations</span>
+  <h2 class="title">Evals &amp; Measured Quality</h2>
+  <p class="lead">75 hand-labelled entities, two batches, so a prompt tuned on the first is scored
+  on the second. The most useful thing this eval did was prove itself wrong — twice.</p>
+  <hr>
+
+  <h3>Shipped: v4 on Sonnet 5 <span class="tagline g">current</span></h3>
+  <table>
+    <tr><th>Config</th><th class="num">Accuracy</th><th class="num">Precision</th>
+        <th class="num">Held-out</th><th class="num">Recall</th><th class="num">$/call</th></tr>
+    <tr class="hi"><td><b>v4 · Sonnet 5</b></td><td class="num">0.773</td><td class="num">0.765</td>
+        <td class="num">0.727</td><td class="num">0.722</td><td class="num">$0.00368</td></tr>
+    <tr><td>v3 · Sonnet 5</td><td class="num">0.667</td><td class="num">0.615</td>
+        <td class="num">0.667</td><td class="num">0.444</td><td class="num">$0.00378</td></tr>
+    <tr><td>v2 · Haiku 4.5</td><td class="num">0.653</td><td class="num">0.588</td>
+        <td class="num">0.500</td><td class="num">0.500</td><td class="num">$0.00341</td></tr>
+    <tr><td>v4 · Haiku 4.5</td><td class="num">0.667</td><td class="num">0.524</td>
+        <td class="num">0.467</td><td class="num">0.611</td><td class="num">$0.00205</td></tr>
+    <tr><td>v3 · Haiku 4.5</td><td class="num">0.627</td><td class="num">0.471</td>
+        <td class="num">0.385</td><td class="num">0.444</td><td class="num">$0.00518</td></tr>
+  </table>
+  <p><b>Precision on <code>end_customer_company</code> governs deployment</b> — not accuracy. A
+  false positive puts a hosting provider in a rep's call list; they phone a datacenter about its
+  customers' vulnerabilities and never trust the tool again. A false negative removes a company
+  from the market invisibly — costly, but recoverable.</p>
+
+  <h3>Reversal one: 25 examples produced a confident wrong answer</h3>
+  <p>At n=25, v3-on-Haiku measured 0.750 precision, ranked first of three, and the write-up argued
+  explicitly <i>against</i> Sonnet at 0.500 — that Sonnet "commits where Haiku hedges", and
+  decisiveness is the wrong disposition when a wrong commitment reaches a salesperson.</p>
+  <p>At n=75 the ordering <b>inverted completely</b>: Haiku last at 0.385 held-out, Sonnet first at
+  0.667. Nothing changed but the number of labels.</p>
+  <div class="note"><b>The caveat was already written, before the reversal</b> — that support of 6
+  made one row worth 0.25 of precision, and that only one comparison was defensible. It turned out
+  to be the only reliable line in that table. That is the argument for writing a limitation down
+  when you notice it rather than after it embarrasses you.</div>
+
+  <h3>Reversal two: one cell of the grid had never been run</h3>
+  <p>v4 existed to clear Haiku's 4,096-token cache floor — but it also carried three <i>content</i>
+  changes. Those were only ever tested on Haiku, because a Haiku cache floor was the point. When
+  the first reversal moved the shipped model to Sonnet, <b>v4-on-Sonnet was never tested</b>.</p>
+  <p>Running it cost <b>$0.28</b> and it won on every metric. <b>Recall decided it, not
+  precision</b>: the held-out precision gain of 0.060 is less than one row and sits inside the
+  measured noise, while recall moved 0.444 → 0.722 — five more real companies out of eighteen,
+  with <i>fewer</i> false positives. Judging on precision alone would have called it a tie and
+  shipped the worse configuration.</p>
+  <p>Both times the recommendation changed, <b>production was re-run</b> rather than leaving a
+  conclusion the evidence no longer supported.</p>
+
+  <h3>The noise floor underneath all of it</h3>
+  <p>A billing mistake left two independent classifications of the same 3,000 entities under the
+  same prompt and the same model. That makes the disagreement between them a direct measurement.</p>
+  <div class="metrics" style="grid-template-columns:repeat(4,1fr)">
+    <div class="met"><b>95.5%</b><span>Class agreement</span></div>
+    <div class="met"><b>136</b><span>Class flips</span></div>
+    <div class="met"><b>96</b><span>Tier changes</span></div>
+    <div class="met"><b>0.023</b><span>Mean confidence move</span></div>
+  </div>
+  <div class="note warn">Held-out support is 12, so one row moves precision by 0.083 — and the gap
+  between the best and worst configuration is a few rows, the same order as a model's disagreement
+  with itself. <b>The honest claim is "best measured so far", not "best".</b></div>
+</section>
+
+<!-- ============ COST ============ -->
+<section class="page" id="cost">
+  <p class="crumb"><span data-go="overview">Overview</span> / Cost Model</p>
+  <span class="eyebrow">$0.00368 per entity</span>
+  <h2 class="title">Cost Model</h2>
+  <p class="lead">Measured from traces, not derived from arithmetic — because the first estimate
+  was wrong by 5.7× and the second was wrong by a factor nobody could reconstruct.</p>
+  <hr>
+
+  <h3>The rates, so every figure here can be checked</h3>
+  <table>
+    <tr><th>Model</th><th class="num">Input / MTok</th><th class="num">Output / MTok</th><th class="num">Cache read</th></tr>
+    <tr><td>Sonnet 5</td><td class="num">$2.00</td><td class="num">$10.00</td><td class="num">$0.20</td></tr>
+    <tr><td>Haiku 4.5</td><td class="num">$1.00</td><td class="num">$5.00</td><td class="num">$0.10</td></tr>
+  </table>
+<pre>(6,470 cached × $0.20  +  400 fresh × $2.00  +  159 out × $10.00) / 1e6  =  $0.00368</pre>
+  <p>That reconciles with the traces to five decimal places. Note where the money goes:
+  <b>output is 43% of per-call cost on 159 tokens</b>, while 6,470 cached input tokens are 35%.
+  That is why the <code>reasoning</code> field is capped at twenty words.</p>
+
+  <h3>Per full refresh</h3>
+  <table>
+    <tr><th>Configuration</th><th class="num">43,577 entities</th></tr>
+    <tr><td>v3 · Haiku — prefix below the cache floor</td><td class="num">$220</td></tr>
+    <tr class="hi"><td><b>v4 · Sonnet — as run</b></td><td class="num"><b>$161</b></td></tr>
+    <tr><td>v4 · Haiku, batched</td><td class="num">$45</td></tr>
+    <tr class="hi"><td><b>v4 · Sonnet, Batch API</b></td><td class="num"><b>~$80</b></td></tr>
+  </table>
+  <p><b>Caching, not model choice, is the dominant term.</b> The shipped Sonnet configuration is
+  cheaper per call than <i>uncached Haiku</i>, despite triple the list price.</p>
+
+  <h3>Caching failed silently, and four diagnoses all failed the same way</h3>
+  <p>The minimum cacheable prefix is <b>model-dependent and non-monotonic</b> — Haiku 4.5 needs
+  4,096 tokens where Opus 5 needs 512. Below the floor nothing caches, the request still succeeds,
+  and the cache fields just return zero.</p>
+  <p>Two compounding errors. The floor applies to the <b>cacheable prefix</b> — tools plus system,
+  everything before the breakpoint — not to total input. And every attempt <i>derived</i> the
+  prefix instead of observing it: from chars-per-token, then by subtracting an estimated message
+  size from an observed total, then from a purpose-built script that did the same subtraction in
+  tokens. That script over-reported by ~315 tokens — enough to report v3's prefix as <b>86 above</b>
+  a floor it was <b>~230 below</b>.</p>
+  <div class="note"><b>Each estimate was within about 5%.</b> Against a gradient, a 5% error means a
+  5% wrong answer. Against a hard cutoff it puts you confidently on the wrong side. The fix was one
+  real API call reading <code>cache_creation_input_tokens</code> back — a fraction of a cent, two
+  minutes. Which is why <b>a longer prompt costs 2.5× less</b>.</div>
+
+  <div class="note bad"><b>The production run was billed twice.</b> The first Sonnet run wrote
+  results before <code>--model</code> was recorded, so those rows carry <code>model: null</code>.
+  The rerun's resume key is the <code>(prompt_version, model)</code> pair — correctly — which
+  matched none of them, so all 3,000 were classified again. <b>A key change is a migration:</b>
+  rows written under the old key are invisible to the new one, and "resume" silently becomes
+  "restart". It cost ~$10.60 and produced the self-consistency measurement.</div>
+</section>
+
+<!-- ============ LIMITS ============ -->
+<section class="page" id="limits">
+  <p class="crumb"><span data-go="overview">Overview</span> / Known Limitations</p>
+  <span class="eyebrow">36 live entries</span>
+  <h2 class="title">Known Limitations</h2>
+  <p class="lead">The six that change how you should read the output. Full list by layer in the
+  repo — 36 live entries, plus the solved ones kept because the failure modes generalise.</p>
+  <hr>
+
+  <table>
+    <tr><th>Limitation</th><th>Why it matters</th></tr>
+    <tr><td><b>Every CVE is version-inferred, never tested</b></td>
+        <td><code>verified</code> was false on 100% of 7,066 sampled entries. Scoring leads on EPSS
+        instead, and outreach hedges accordingly.</td></tr>
+    <tr><td><b>Tier A holds 818 of 1,005 accounts</b></td>
+        <td>81%. The queue is pre-filtered to entities with a finding, so urgency stops
+        discriminating. Ranking within the tier is still correct; the label carries no information.</td></tr>
+    <tr><td><b>The model disagrees with itself on 4.5% of entities</b></td>
+        <td>Measured across two identical runs of 3,000. It is the noise floor under every eval
+        number here.</td></tr>
+    <tr><td><b>75 examples, one labeller, no adjudication</b></td>
+        <td>Support of 18 overall, 12 held-out. At least two labels are probably wrong —
+        <code>3cx.ae</code> is a PBX <i>software</i> vendor labelled <code>isp_telco</code>.</td></tr>
+    <tr><td><b>Entity resolution is a heuristic</b></td>
+        <td>Shortest-domain-wins picks the anchor, ~26% of records have no resolvable domain, and
+        host count is a poor size proxy.</td></tr>
+    <tr><td><b>Only 3,000 of 43,577 queued entities are classified</b></td>
+        <td>Budget. Everything below the cut stays <code>U - unclassified</code> and never reaches
+        a rep.</td></tr>
+  </table>
+
+  <h3>The pattern worth naming</h3>
+  <div class="note"><b>Three of the four bugs that mattered were found by reading output, not by
+  running tests.</b> Hosting providers in tier A, an IP address as a company, an email blaming a web
+  server for a glibc vulnerability. Schema tests verify that data has the right shape. They cannot
+  tell you the shape is describing the wrong thing.</div>
+
+  <h3>What I would do differently</h3>
+  <table>
+    <tr><th class="num">#</th><th>Change</th></tr>
+    <tr class="hi"><td class="num">1</td><td><b>Run the queue on the Batch API.</b> 50% of standard
+      rates with caching still applied — ~$80 a refresh against $161. Classification is the textbook
+      workload. The architecture document asserted batch while the code only did the synchronous
+      loop; <b>a design that exists only in the prose is not a design.</b></td></tr>
+    <tr><td class="num">2</td><td><b>More evidence, not better prompting.</b> The consistent failure
+      is single-host entities with unfamiliar names. The model gets one host, a product string and
+      an org name belonging to someone else. Page titles or WHOIS would fix most of it; no amount
+      of prompt work will.</td></tr>
+    <tr><td class="num">3</td><td><b>150+ examples and a second labeller</b>, with disagreements
+      adjudicated.</td></tr>
+    <tr><td class="num">4</td><td><b>Repeated-run confidence intervals in the harness.</b> We
+      measured self-consistency by accident; the tooling should report an interval, not a point.</td></tr>
+    <tr><td class="num">5</td><td><b>Set tier thresholds from the distribution</b> — a percentile
+      cut decided in advance. Not retuned after the fact, because adjusting a threshold once you
+      have seen which rows it moves is the same error as tuning a prompt after seeing its eval.</td></tr>
+    <tr><td class="num">6</td><td><b>Carry product and CVE as one struct</b> through aggregation, so
+      the Apache/glibc class of error becomes impossible rather than reworded around.</td></tr>
+  </table>
+</section>
+
+<!-- ============ SCALE ============ -->
+<section class="page" id="scale">
+  <p class="crumb"><span data-go="overview">Overview</span> / Scaling to 10×</p>
+  <span class="eyebrow">89M records · ~740 GB</span>
+  <h2 class="title">Scaling to 10×</h2>
+  <p class="lead">89 million records, ~740 GB decompressed. Two layers already hold, two need
+  restructuring, one changes character entirely — and the real bottleneck is accuracy, not compute.</p>
+  <hr>
+
+  <table>
+    <tr><th>Layer</th><th>At 10×</th></tr>
+    <tr><td><b>Ingest</b></td>
+        <td><b>Design holds, parallelism doesn't.</b> Memory is already flat. But a single-threaded
+        parse turns 40 minutes into ~7 hours. Have the producer write many smaller zstd files and
+        run one worker per file — embarrassingly parallel. The filesystem-glob resume state also
+        needs a manifest with per-shard row counts.</td></tr>
+    <tr class="hi"><td><b>Storage &amp; compute</b></td>
+        <td><b>DuckDB stops being the right tool.</b> Correct for this exercise, wrong at 10×: it is
+        single-node, and ~150–200 GB of Parquet will not aggregate comfortably in memory. Same
+        models, different engine — Snowflake or Spark with dbt on top. <b>Putting the business logic
+        in dbt is what makes that migration cheap:</b> swapping the adapter changes the warehouse,
+        not the logic. Partition by country and scan date; make the entity and signal models
+        incremental on <code>scanned_at</code>.</td></tr>
+    <tr class="hi"><td><b>Entity resolution</b></td>
+        <td><b>The real bottleneck — and it is about accuracy, not speed.</b> The compute scales
+        fine; the problem does not. 26% with no resolvable domain becomes ~650,000 unattributed
+        hosts, wrong anchors multiply in absolute terms, and cross-TLD fragmentation grows. At this
+        size I would stop treating it as string manipulation: ASN-to-organisation reference data to
+        attribute domainless hosts, plus blocking-and-similarity matching to merge a company across
+        TLDs. That is a real entity-resolution system rather than a public-suffix lookup, and it is
+        where the engineering budget should go.</td></tr>
+    <tr><td><b>LLM layer</b></td>
+        <td><b>Economics change, architecture mostly holds.</b> 43,577 queued becomes ~435,000 —
+        ~$1,600 on-demand, ~$800 batched. Batch becomes non-negotiable; add two-tier routing with
+        Haiku for clear cases and Sonnet for ambiguous ones (<i>measured</i>, not assumed — this
+        project is a case study in rankings inverting on more data); use the 1-hour cache TTL, since
+        batch scheduling can outlast the 5-minute default. The signal filter matters more, not
+        less — it already prevents 83,464 calls.</td></tr>
+    <tr><td><b>Serving</b></td>
+        <td><b>Changes character completely.</b> A 350 KB Parquet in git is right for a demo and
+        absurd at ~1 million prospect rows. This becomes a served query layer — Postgres or
+        DuckDB-over-object-storage behind an API, paginating server-side. And the app needs auth,
+        which it does not have today.</td></tr>
+  </table>
+
+  <h3>The things that get worse faster than linearly</h3>
+  <div class="note warn"><b>The eval set.</b> 75 examples is already small. At 10× the population is
+  more diverse — more countries, more regional providers — so a fixed-size eval covers
+  proportionally less. It needs stratified sampling by region and estate size, and re-labelling as
+  the data drifts.<br><br>
+  <b>Prompt drift.</b> A prompt tuned on this snapshot degrades as the population shifts. At
+  recurring 10× scale the eval belongs in CI, scoring every prompt change against a held-out set
+  automatically.<br><br>
+  <b>The seed list.</b> ~70 hand-curated patterns covering what was visible in <i>this</i> snapshot,
+  with nothing refreshing it. Derive it from ASN ownership data instead of string matching.<br><br>
+  <b>Cost monitoring becomes mandatory.</b> At $161 a refresh you can eyeball it; at $1,600 you need
+  a budget guard that halts the run. The degradation path is documented — fall back to rules-only
+  tiering, queue the remainder, alert — but it is not implemented.</div>
+</section>
+
+</main>
+
+<script>
+  const nav = document.getElementById('nav');
+  function show(id){
+    document.querySelectorAll('.page').forEach(p => p.classList.toggle('on', p.id === id));
+    document.querySelectorAll('#nav a').forEach(a => a.classList.toggle('on', a.dataset.p === id));
+    window.scrollTo({top:0, behavior:'instant'});
+    history.replaceState(null, '', '#' + id);
+  }
+  nav.addEventListener('click', e => {
+    const a = e.target.closest('a[data-p]');
+    if (a) show(a.dataset.p);
+  });
+  document.addEventListener('click', e => {
+    const g = e.target.closest('[data-go]');
+    if (g) show(g.dataset.go);
+  });
+  if (location.hash) {
+    const id = location.hash.slice(1);
+    if (document.getElementById(id)) show(id);
+  }
+
+  // sidebar search: filter nav, and jump on exact-ish match
+  const q = document.getElementById('q');
+  q.addEventListener('input', () => {
+    const t = q.value.trim().toLowerCase();
+    document.querySelectorAll('#nav a').forEach(a => {
+      a.style.display = !t || a.textContent.toLowerCase().includes(t) ? '' : 'none';
+    });
+    document.querySelectorAll('.group').forEach(g => { g.style.display = t ? 'none' : ''; });
+  });
+  q.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      const first = [...document.querySelectorAll('#nav a')].find(a => a.style.display !== 'none');
+      if (first) { show(first.dataset.p); q.value = ''; q.dispatchEvent(new Event('input')); }
+    }
+  });
+</script>
+</body>
+</html>

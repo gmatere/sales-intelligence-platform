@@ -201,6 +201,8 @@ python evals/run_eval.py --prompt-version v4 --model claude-sonnet-5
 - [`docs/HOW_I_BUILT_THIS.md`](docs/HOW_I_BUILT_THIS.md) — dev loop, where AI helped and where it cost time
 - [`evals/RESULTS.md`](evals/RESULTS.md) — measured quality and its caveats
 - [`NOTES.md`](NOTES.md) — build journal, written as it happened
+- [`docs/index.html`](docs/index.html) — the same material as a single-page site,
+  organised by pipeline stage. Open it locally, or serve `docs/` via GitHub Pages.
 
 ## Known weaknesses
 
