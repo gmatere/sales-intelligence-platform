@@ -351,6 +351,35 @@ Amazon.com, Inc.     287,584</pre>
     <div class="met"><b>73.5%</b><span>Domain coverage</span></div>
   </div>
 
+  <h3>The IPv6 gap, and why it was left alone</h3>
+  <p>Shodan fills <code>ip_str</code> for IPv4 and <code>ipv6</code> for IPv6, leaving the other
+  null. The ingest projects <code>ip_str</code> only — so IPv6-only services arrive with no
+  address at all. That is <b>106,419 records, 1.19% of the source</b>.</p>
+  <p>The instinct is to fix the data. The better first move was to measure what the gap actually
+  costs:</p>
+  <div class="metrics" style="grid-template-columns:repeat(3,1fr)">
+    <div class="met"><b>81,945</b><span>77% — no identity at all, already dropped</span></div>
+    <div class="met"><b>24,383</b><span>Attribute and score normally</span></div>
+    <div class="met"><b>1.6%</b><span>Of entities affected at all</span></div>
+  </div>
+  <p>Three quarters cost nothing: they have no hostname and no certificate CN either, so
+  <code>int_entity_hosts</code> already discards them for lack of any identity. The rest work
+  normally — because <b>entity resolution keys on hostnames, not addresses</b>. A host named
+  <code>mail.acme.com</code> resolves to <code>acme.com</code> whether or not its address was
+  captured.</p>
+  <div class="note good"><b>So a fifth re-ingest was declined.</b> The only residual effect was
+  that <code>count(distinct ip)</code> undercounted estate size for 3,570 entities, which feeds the
+  ICP size band — patched by falling back to hostnames in the distinct count. And there is no
+  display cost, because the export drops every IP address by design. Forty minutes of wall clock,
+  for a field nothing downstream depended on, against a fixed deadline. Recorded as D17.</div>
+
+  <div class="note warn"><b>Found by a test that was itself wrong.</b> A <code>not_null</code> test
+  on <code>ip</code> failed with 106,419 rows. The assertion was wrong, not the data — Shodan does
+  not guarantee an IPv4 address. Replaced with <code>assert_hosts_are_identifiable</code>, which
+  tests the weaker claim that matters: every host must have an address <i>or</i> a name. Its
+  thresholds warn at the measured baseline and error above 100,000, so the current state becomes a
+  canary for the source changing shape.</div>
+
   <h3>What it cost us</h3>
   <div class="note bad"><b>Truncated Parquet counted as complete.</b> Shards were written straight
   to their final filename. Parquet writes its footer last, so a crash mid-write left a truncated

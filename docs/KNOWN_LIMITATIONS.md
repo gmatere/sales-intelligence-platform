@@ -51,9 +51,14 @@ rather than addresses.
 
 The residual cost is that `count(distinct ip)` would understate the estate for
 those 3,570 entities, which feeds the ICP size band. Mitigated by falling back
-to the first hostname in the distinct count. The app still cannot display an
-address for them. A fifth re-ingest to capture `ipv6` was rejected: 40 minutes
-of wall clock for a display field on 1.6% of entities, against a fixed deadline.
+to the first hostname in the distinct count, so the undercount is corrected
+rather than carried.
+
+There is no display cost: `export_curated.py` drops every IP address by design,
+so the serving artifact contains no addresses for *any* entity. A fifth
+re-ingest to capture `ipv6` was rejected — 40 minutes of wall clock against a
+field nothing downstream depends on, for 1.6% of entities, on a fixed deadline.
+Recorded as **D17**.
 
 Found by a `not_null` test that was itself wrong — it asserted a property the
 source does not have. Replaced with `assert_hosts_are_identifiable`, which

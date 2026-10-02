@@ -35,6 +35,7 @@ nothing about how they were reached.
 | D14 | Ship v3 on Sonnet, reversing D13 | superseded by D16 |
 | D15 | Ship at the cost ceiling rather than under it | current |
 | **D16** | **Ship v4 on Sonnet, reversing D14** | **current — shipped** |
+| D17 | Reject a fifth re-ingest for IPv6 addresses | current |
 
 Three entries reverse an earlier one: D12e over D12b/D12d on prompt caching,
 and D14 then D16 on which configuration ships. Both reversals came from
@@ -642,3 +643,52 @@ and now the eval matrix. The first three keyed on `prompt_version` alone and
 were fixed by keying on the **(prompt, model) pair**. This one was different —
 the pair was understood, and one cell had simply never been run. Keying
 correctly does not help if the grid has a hole in it.
+
+---
+
+## D17 — Reject a fifth re-ingest for IPv6 addresses
+
+**Decision.** `ipv6` stays unprojected. IPv6-only hosts carry a null `ip`, and
+the estate-size count falls back to hostnames instead.
+
+**Why.** Shodan populates `ip_str` for IPv4 and `ipv6` for IPv6, leaving the
+other null. Ingest projects `ip_str` only, so IPv6-only services arrive with no
+address — **106,419 records, 1.19% of the source.**
+
+Capturing it meant editing the projection and re-running the full 40-minute
+ingest, for a fourth time. So the impact was measured before deciding:
+
+| | |
+|---|---:|
+| IPv6-only records | 106,419 |
+| ...with no entity anchor at all | **81,945 (77%)** |
+| ...attributing to entities | 24,383 |
+| Entities affected | **3,570 of 228,570 — 1.6%** |
+
+**Three quarters of them cost nothing**, because they have no hostname and no
+certificate CN either, so `int_entity_hosts` already drops them for lack of any
+identity. The remaining quarter attribute and contribute signals **normally**,
+because entity resolution keys on hostnames rather than addresses — a host named
+`mail.acme.com` resolves to `acme.com` whether or not its address was captured.
+
+**Consequence.** One residual effect: `count(distinct ip)` understates the
+estate for those 3,570 entities, which feeds the ICP size band and therefore
+`fit_score`. Mitigated by falling back to the first hostname in the distinct
+count, so the undercount is corrected rather than carried.
+
+No effect on the serving artifact: `export_curated.py` drops every IP address by
+design, so there is no display cost to recover.
+
+**Why this is recorded as a decision rather than a limitation.** The reasoning
+is the transferable part. The instinct on finding a 1.19% data gap is to fix the
+data. The right first move was to measure what the gap actually costs — and it
+cost almost nothing, because the field was not load-bearing for the thing it
+appeared to break. Forty minutes of wall clock against a fixed deadline, for a
+field nothing depended on, is a trade worth declining out loud.
+
+**Found by a test that was itself wrong.** A `not_null` test on `ip` failed with
+106,419 rows. The assertion was wrong, not the data — Shodan does not guarantee
+an IPv4 address. Replaced with `assert_hosts_are_identifiable`, which tests the
+weaker claim that matters: every host must have an address *or* a name. See
+`KNOWN_LIMITATIONS.md` for that test's warn/error thresholds, which encode the
+measured baseline as a canary for the source changing shape.
