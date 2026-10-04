@@ -144,6 +144,77 @@ domain names. `entity_source` is carried through the pipeline so these can be
 identified, filtered or weighted down — but they are currently treated the same
 as hostname-anchored records.
 
+**[gap] Nothing checks what was excluded.**
+Every control here guards one direction: infrastructure must not reach a rep.
+Four dbt tests, the confidence floor, the review tier, the 75-example eval. None
+of them samples what was *removed* and asks whether removing it was right.
+
+The rule tier drops 125,037 of 252,078 entities — half the population — on five
+hand-tuned rules. Their accuracy has been argued, never measured.
+
+The asymmetry is built in. A false positive complains: a rep phones a datacenter
+and stops trusting the tool. A false exclusion is silent, because nobody reviews
+a list they never see. So the one error this system cannot feel is the one it
+never checks.
+
+**What it needs** — a suppression audit, mirroring the eval on the other side.
+Sample ~50 entities per `rule_evidence` family, five families, ~250 total. Label
+them, or have the classifier adjudicate them as a second opinion. Report
+**exclusion precision per rule**: of what this rule removed, how much was
+genuinely infrastructure?
+
+Same harness as `run_eval.py`, pointed at the opposite class. About $1 of
+inference and an afternoon of labelling. Not built — and the next entry is what
+that absence allowed.
+
+**[risk] The denylist matches the host provider, not the company.**
+`seed_match` compares seed patterns against `orgs_seen` as well as against the
+entity's own domain. `orgs_seen` holds the `org` values of an entity's hosts, and
+`org` names whoever owns the IP block. So any entity with one service on AWS,
+Azure or GCP matches a pattern and is classified `infrastructure` — never queued,
+never reviewed. `string_agg(distinct ...)` means one cloud-hosted service
+excludes a whole estate.
+
+**D2 warned about this.** It records that `org` names the IP-block owner rather
+than the company — then names `org` as the denylist's matching field, which is an
+identity decision.
+
+Measured on this snapshot. These figures describe the data, not the system;
+another dataset gives different ones:
+
+| | |
+|---|---:|
+| Excluded only by the `orgs_seen` match | **32,967** |
+| Also caught by another rule | 583 (1.7%) |
+| Share of all entities | 13.1% |
+| Share of all rule exclusions | 26.4% |
+| Share of host records | 1.8% |
+
+The 583 is the figure that matters. The volume rules already catch the real
+providers on their own, so this arm of the join adds 583 duplicate exclusions and
+32,967 doubtful ones. A random 25 of those 32,967 contained no provider domains
+at all — `ox.security`, `climacell.co`, `koton.ru`, `drwolf.it`,
+`vinnhospital.com`.
+
+One line fixes it: match `entity_domain` only. Sequenced behind the audit — see
+**D18**.
+
+**[risk] The recorded exclusion reason is often wrong.**
+`seed_match` takes `min(p.provider)` and `min(p.provider_class)` as two separate
+aggregates. When an entity matches several seed patterns, each picks
+alphabetically from its own column — so the provider name can come from one
+matched row and the class from another.
+
+Measured: **3,002 entities** record Amazon Web Services as a `cdn` when it is
+`cloud`. AT&T appears as `cdn`, `cloud` and `hosting` across 420 entities when it
+is an `isp`. DigitalOcean, Hetzner, Linode and GoDaddy are all recorded as
+`cloud` when they are `hosting`.
+
+It does not change any exclusion, because the code only tests
+`matched_provider_class is not null`. It makes the audit trail unreliable: anyone
+tracing why an entity was dropped may be told the wrong reason. Same shape as the
+`arg_max` product/CVE defect — independent aggregates over one group.
+
 **[gap] The seed list will never catch the long tail, by construction.**
 Regional hosting providers are the largest source of false prospects and there
 are thousands of them. Adding the ones visible in a 20-row sample would overfit

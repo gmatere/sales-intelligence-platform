@@ -36,6 +36,7 @@ nothing about how they were reached.
 | D15 | Ship at the cost ceiling rather than under it | current |
 | **D16** | **Ship v4 on Sonnet, reversing D14** | **current — shipped** |
 | D17 | Reject a fifth re-ingest for IPv6 addresses | current |
+| D18 | Build the exclusion audit before changing the denylist | current |
 
 Three entries reverse an earlier one: D12e over D12b/D12d on prompt caching,
 and D14 then D16 on which configuration ships. Both reversals came from
@@ -614,9 +615,9 @@ led at n=25. v4 is v3 plus enough margin to clear it.
 But v4 also carried three *content* changes: an instruction to scan the
 organisation list for security-vendor names, guidance that a recognisable
 organisation name outweighs a small estate, and three more worked examples.
-Those were only ever evaluated on Haiku, because a Haiku cache floor was the
-whole point. When D14 moved the shipped model to Sonnet, that cell of the grid
-was never re-run.
+Those were evaluated on Haiku, because a Haiku cache floor was the whole
+point. What they did on Sonnet — the model D14 had just moved production to —
+was a separate question.
 
 Running it cost $0.28:
 
@@ -637,12 +638,26 @@ have called this a tie and shipped the worse configuration.
 **Consequence.** 1,005 confirmed organisations against 972 under v3 — 33 more
 companies reaching the market — and tier A grows from 779 to 818.
 
-**What this says about the process.** The same mistake had already appeared in
-four places: the classifier's resume key, the trace analysis, the export filter
-and now the eval matrix. The first three keyed on `prompt_version` alone and
-were fixed by keying on the **(prompt, model) pair**. This one was different —
-the pair was understood, and one cell had simply never been run. Keying
-correctly does not help if the grid has a hole in it.
+**The prompt file said otherwise for a while.** v4's frontmatter declared
+`model: claude-haiku-4-5`, which was correct when written — v4 existed to clear
+Haiku's cache floor. Production overrode it with `--model claude-sonnet-5` and
+the file was never updated, so `classify.py --prompt-version v4` without the
+flag silently selected the configuration measuring 0.467 held-out precision
+instead of 0.727.
+
+Nothing downstream was affected: every trace and verdict records the model
+actually used rather than the declared one, and the export filters on the
+`(prompt_version, model)` pair. But a default that contradicts the shipped
+configuration is a trap for whoever runs it next. The frontmatter now reads
+`claude-sonnet-5`. v4 is no longer the Haiku prompt; it is the shipped prompt.
+
+**What this says about the process.** The same mistake appeared in three
+places — the classifier's resume key, the trace analysis and the export filter
+— all keying on `prompt_version` alone, all fixed by keying on the **(prompt,
+model) pair**. D16 is not a fourth. Here the pair was understood; what was
+missed is that a change made for cost can move quality, so it has to be
+measured on the configuration that ships, not only on the one it was built
+for.
 
 ---
 
@@ -679,16 +694,64 @@ count, so the undercount is corrected rather than carried.
 No effect on the serving artifact: `export_curated.py` drops every IP address by
 design, so there is no display cost to recover.
 
-**Why this is recorded as a decision rather than a limitation.** The reasoning
-is the transferable part. The instinct on finding a 1.19% data gap is to fix the
-data. The right first move was to measure what the gap actually costs — and it
-cost almost nothing, because the field was not load-bearing for the thing it
-appeared to break. Forty minutes of wall clock against a fixed deadline, for a
-field nothing depended on, is a trade worth declining out loud.
-
 **Found by a test that was itself wrong.** A `not_null` test on `ip` failed with
-106,419 rows. The assertion was wrong, not the data — Shodan does not guarantee
-an IPv4 address. Replaced with `assert_hosts_are_identifiable`, which tests the
-weaker claim that matters: every host must have an address *or* a name. See
-`KNOWN_LIMITATIONS.md` for that test's warn/error thresholds, which encode the
+106,419 rows. Three responses were available: silence the assertion, capture
+`ipv6` and re-ingest, or ask whether the assertion was true.
+
+**The re-ingest would not have fixed it.** `ip` is populated from `ip_str`
+alone, so adding an `ipv6` column leaves `ip` null for exactly the same 106,419
+rows and the test fails identically. Making it pass would have required
+coalescing both into one address column — redefining what the column means,
+which is itself an admission that the original assertion was wrong.
+
+And it was. `not_null(ip)` asserts that every exposed service has an IPv4
+address. That is false about **the internet**, not about this pipeline. Shodan
+makes no such guarantee, and nothing we control could make it true.
+
+Replaced with `assert_hosts_are_identifiable`, which tests the weaker claim that
+actually matters: every host must have an address *or* a name, or it can be
+neither attributed nor shown to a rep. Its warn/error thresholds encode the
 measured baseline as a canary for the source changing shape.
+
+**The transferable part.** When a test fails, the first question is whether the
+assertion is true — not how to satisfy it. Here the tempting principled move
+(re-ingest the missing field) was 40 minutes of work that would have left the
+failure in place, because it treated a false assertion as a data defect.
+
+---
+
+## D18 — Build the exclusion audit before changing the denylist
+
+**Decision.** The denylist matches on the wrong field. The one-line correction is
+sequenced **behind** the control that would measure it.
+
+**The defect.** `seed_match` compares seed patterns against `orgs_seen` — the
+`org` values of an entity's hosts — as well as the entity's own domain. `org`
+names the IP-block owner, so any entity with one service at a major cloud
+provider is classified `infrastructure`: never queued, never reviewed. On this
+snapshot that is 32,967 entities, of which only 583 would be caught by any other
+rule. The volume rules were already catching the real providers on their own.
+
+**Why the fix waits.** Changing an exclusion policy means being able to measure
+exclusions, and nothing here can. The rule tier removes half the population on
+five hand-tuned rules whose accuracy has never been sampled. Applying the
+correction now would swap one unmeasured policy for another, and the improvement
+would be an argument rather than a number.
+
+It also moves ~32,967 entities into a population the eval has never seen. They
+skew to single-host estates, which the eval already identifies as the
+classifier's weakest case. A 26% larger queue, scored against a labelled set
+sampled before the change, repeats the error this project has twice corrected.
+
+**Current state.** Nothing in the prospect list is wrong — this is a false
+exclusion, not a false positive, so the 1,005 confirmed organisations stand. What
+is understated is the addressable market.
+
+**Order of work.** Audit the suppression list → apply the one-line change →
+re-run the rule tier → sample and label 50 newly-admitted entities → extend the
+eval → re-run the classifier → re-export. About a day, mostly labelling. Step one
+is worth having whether or not step two happens.
+
+**What generalises.** Not the 32,967 — that belongs to a snapshot nobody will
+process again. What holds is that every instrument pointed the same way, so the
+only error the system could not feel was also the only one it never checked.

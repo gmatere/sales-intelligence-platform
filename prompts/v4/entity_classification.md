@@ -1,7 +1,7 @@
 ---
 version: v4
 task: entity_classification
-model: claude-haiku-4-5
+model: claude-sonnet-5
 created: 2026-09-22
 supersedes: v3
 changes: >

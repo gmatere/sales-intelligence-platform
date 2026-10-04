@@ -68,7 +68,7 @@ evidence no longer supported.
 
 ---
 
-## The second reversal: v4 was only ever tested on the wrong model
+## The second reversal: v4 turned out to be more than a cache fix
 
 v4 exists because v3's cacheable prefix sat just under Haiku's 4,096-token
 floor, so caching silently failed on the configuration that led at n=25. v4 is
@@ -77,11 +77,11 @@ instruction to scan the organisation list for security-vendor names, guidance
 that a recognisable organisation name outweighs a small estate, and three more
 worked examples.
 
-Those content changes were evaluated **only on Haiku**, because v4's whole
-purpose was a Haiku cache floor. When the n=75 eval moved the shipped model to
-Sonnet, nobody re-tested v4 there — so the report described v4 as "the cheap
-Haiku option" when it was really "v3 plus improvements, measured on the cheaper
-model only".
+Those content changes were evaluated on Haiku, because that is where the
+caching problem was. But v4 was more than a longer prompt — three real changes
+came with the margin, and they had been measured only on the cheaper model
+while the report still described v4 as "the cheap Haiku option" rather than
+"v3 plus improvements, measured on one model".
 
 Running it cost $0.28 and changed what ships:
 
@@ -94,11 +94,11 @@ Running it cost $0.28 and changed what ships:
 | `isp_telco` precision | 1.000 | 1.000 |
 
 The lesson is not about v4. It is that **a configuration is the (prompt, model)
-pair**, and this project made the same mistake in four separate places before
-this one — the classifier's resume key, the trace analysis, the export filter,
-and now the eval matrix itself. Three of those were fixed by keying on the
-pair. This one was a hole in coverage: the pair existed as a concept, and one
-cell of the grid had simply never been run.
+pair**, and this project made the same mistake in three separate places before
+this one — the classifier's resume key, the trace analysis, and the export
+filter, all fixed by keying on the pair. v4 is a different thing: the pair was
+understood, and a change made to fix caching turned out to change quality too.
+**A fix measured only where the problem was will miss what else it did.**
 
 ---
 
