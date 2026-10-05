@@ -115,7 +115,7 @@ alert.
 | | |
 |---|---|
 | Precision, `end_customer_company` | **0.765** (0.727 on held-out batch) |
-| Recall | 0.722 |
+| Recall | **0.722** (0.667 on held-out batch) |
 | Accuracy | 0.773 |
 
 Precision on that class is the metric that governs deployment: a false positive
@@ -129,12 +129,14 @@ thing in this project.**
 | | Shipped at the time | What the next measurement said |
 |---|---|---|
 | n=25, three configs | v3 · Haiku, 0.750 precision | At n=75 it was **last** at 0.385 held-out |
-| n=75, four configs | v3 · Sonnet, 0.667 held-out | v4 · Sonnet reaches **0.727**, recall 0.444 → **0.722** |
+| n=75, four configs | v3 · Sonnet, 0.667 held-out | v4 · Sonnet reaches **0.727**, held-out recall 0.500 → **0.667** |
 
 The first reversal came from nothing but tripling the labels. The second came
 from noticing that v4 had only ever been tested on Haiku — it was built to
 clear Haiku's cache floor, so its *content* improvements were never measured on
-the model actually shipping. They were worth 5 of 18 on recall.
+the model actually shipping. They were worth two more companies out of twelve
+on held-out recall — five of eighteen across all 75, but that set includes the
+25 entities v4 was tuned against.
 
 Both reversals were acted on: the production run was redone each time rather
 than leaving a recommendation the evidence no longer supported.

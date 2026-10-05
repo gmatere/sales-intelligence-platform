@@ -18,21 +18,31 @@ datacenter about its customers' vulnerabilities and never trust the tool again.
 A false negative removes a real company from the market — costly, but invisible
 and recoverable.
 
-| Config | Accuracy | Precision (all 75) | **Precision (held-out)** | Recall | Cost/call |
-|---|---:|---:|---:|---:|---:|
-| **v4 · Sonnet 5** | **0.773** | **0.765** | **0.727** | **0.722** | $0.00368 |
-| v3 · Sonnet 5 | 0.667 | 0.615 | 0.667 | 0.444 | $0.00378 |
-| v2 · Haiku 4.5 | 0.653 | 0.588 | 0.500 | 0.500 | $0.00341 |
-| v4 · Haiku 4.5 | 0.667 | 0.524 | 0.467 | 0.611 | ~$0.00155 |
-| v3 · Haiku 4.5 | 0.627 | 0.471 | 0.385 | 0.444 | $0.00518 |
+| Config | Accuracy | Precision (all 75) | **Precision (held-out)** | Recall (all 75) | **Recall (held-out)** | Cost/call |
+|---|---:|---:|---:|---:|---:|---:|
+| **v4 · Sonnet 5** | **0.773** | **0.765** | **0.727** | **0.722** | **0.667** | $0.00368 |
+| v3 · Sonnet 5 | 0.667 | 0.615 | 0.667 | 0.444 | 0.500 | $0.00378 |
+| v2 · Haiku 4.5 | 0.653 | 0.588 | 0.500 | 0.556 | 0.500 | $0.00341 |
+| v4 · Haiku 4.5 | 0.667 | 0.524 | 0.467 | 0.611 | 0.583 | ~$0.00155 |
+| v3 · Haiku 4.5 | 0.627 | 0.471 | 0.385 | 0.444 | 0.417 | $0.00518 |
 
 **Shipped: v4 on Sonnet 5.**
 
-Recall is in this table because it is what moved the decision. On held-out
-precision v4-Sonnet beats v3-Sonnet by 0.060 — less than one row, inside the
-noise measured below. On recall it beats it by **0.278**, which is five more
-real companies found out of 18, while making *fewer* false positives (4 against
-5). Precision alone would have called this a tie.
+Recall is in this table because it is what moved the decision, and it is split
+the same way precision is — a deciding metric has to be measured on data the
+prompt never saw.
+
+On held-out precision v4-Sonnet beats v3-Sonnet by 0.060: less than one row,
+inside the noise measured below. On held-out recall it beats it by **0.167** —
+8 of 12 against 6 of 12, two more real companies — while making the *same*
+number of false positives, 3 each. Precision alone would have called this a
+tie.
+
+Across all 75 the same gaps read larger: recall 0.722 against 0.444, five more
+companies, and 4 false positives against 5. Those were the figures quoted here
+previously, and they are inflated by the 25 entities v4 was tuned against.
+**v4 · Sonnet is first in both held-out columns and no other configuration tops
+either — but the margin is about two rows, not five.**
 
 ---
 
@@ -88,9 +98,11 @@ Running it cost $0.28 and changed what ships:
 | | v3 · Sonnet | v4 · Sonnet |
 |---|---:|---:|
 | Held-out precision | 0.667 | **0.727** |
-| Recall | 0.444 | **0.722** |
-| Accuracy | 0.667 | **0.773** |
-| False positives | 5 | **4** |
+| Held-out recall | 0.500 | **0.667** |
+| Held-out false positives | 3 | 3 |
+| Recall (all 75) | 0.444 | **0.722** |
+| Accuracy (all 75) | 0.667 | **0.773** |
+| False positives (all 75) | 5 | **4** |
 | `isp_telco` precision | 1.000 | 1.000 |
 
 The lesson is not about v4. It is that **a configuration is the (prompt, model)
@@ -110,7 +122,8 @@ understood, and a change made to fix caching turned out to change quality too.
 |---|---:|---:|
 | Held-out precision | 0.385 | **0.467** |
 | Held-out accuracy | 0.660 | **0.700** |
-| Recall | 0.444 | **0.611** |
+| Held-out recall | 0.417 | **0.583** |
+| Recall (all 75) | 0.444 | **0.611** |
 | Cost/call | $0.00518 | **~$0.00155** |
 
 v4 added an instruction to scan the organisation list for security-vendor
@@ -127,9 +140,9 @@ becomes the binding constraint.
 ### Sonnet's advantage is concentrated where it matters
 
 `isp_telco` precision of **1.000** against Haiku's 0.875–0.900, and the fewest
-false positives on the headline class — 5, against 7 for v2, 9 for v3-Haiku and
-10 for v4. The failure mode that ends a sales call is the one it makes least
-often.
+false positives on the headline class: 4 for v4-Sonnet and 5 for v3-Sonnet,
+against 7 for v2-Haiku, 9 for v3-Haiku and 10 for v4-Haiku. The failure mode
+that ends a sales call is the one the Sonnet configurations make least often.
 
 ---
 

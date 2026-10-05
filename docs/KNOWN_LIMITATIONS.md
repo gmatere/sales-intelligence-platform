@@ -15,7 +15,7 @@ taught more than the fix was worth.
 
 ## Start here
 
-The six that change how you should read the output:
+The eight that change how you should read the output:
 
 | | Why it matters |
 |---|---|
@@ -23,8 +23,10 @@ The six that change how you should read the output:
 | **Tier A holds 818 of 1,005 accounts** | 81%. The queue is pre-filtered to entities with a finding, so urgency stops discriminating. Ranking within the tier is still correct; the label carries no information. |
 | **The same prompt and model disagree with themselves on 4.5% of entities** | Measured across two identical runs of 3,000. It is the noise floor under every eval number here. |
 | **The eval set is 75 examples, one labeller** | Support of 18 on the headline class, 12 held-out. It has already overturned its own recommendation twice. |
-| **Classification precision is 0.765, recall 0.722** | Four false positives out of 75 would have reached a rep's call list. Two of the four are probably mislabelled. |
+| **Classification precision is 0.765, recall 0.722 — 0.727 and 0.667 held-out** | Four false positives out of 75 would have reached a rep's call list. Two of the four are probably mislabelled. |
+| **Entity resolution is a best guess** | Shortest-domain-wins picks the anchor, ~26% of records have no resolvable domain, and host count is a poor size proxy. |
 | **Only 3,000 of 43,577 queued entities are classified** | Budget. Everything below the cut stays `U - unclassified` and never reaches a rep. |
+| **The addressable market is understated** | A company with one server at a cloud provider matches that provider's name and is silently excluded — 32,967 entities here. Nothing validates exclusions, which is why it went unnoticed. |
 
 ---
 
@@ -458,8 +460,10 @@ labels; the reasoning was plausible and the evidence for it was noise.
 Then a second reversal. v4 had only ever been evaluated on Haiku, because it was
 built to clear Haiku's cache floor — so its three *content* changes were never
 measured on the model actually shipping. Running it on Sonnet cost $0.28 and beat
-v3-Sonnet on every metric, decisively on recall (0.444 → 0.722, five more real
-companies out of 18) with fewer false positives.
+v3-Sonnet on held-out precision (0.667 → 0.727) and on held-out recall
+(0.500 → 0.667, two more real companies out of 12) with the same number of
+false positives, 3 each. Across all 75 the recall gap reads 0.444 → 0.722, but
+that set includes the 25 entities v4 was tuned against.
 
 Both recommendations were reversed and production re-run rather than leaving a
 conclusion the evidence no longer supported. The n=25 caveat — support of 6, one

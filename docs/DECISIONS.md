@@ -624,16 +624,24 @@ Running it cost $0.28:
 | | v3 · Sonnet | v4 · Sonnet |
 |---|---:|---:|
 | Held-out precision | 0.667 | **0.727** |
-| Recall | 0.444 | **0.722** |
-| Accuracy | 0.667 | **0.773** |
-| False positives | 5 | **4** |
+| Held-out recall | 0.500 | **0.667** |
+| Held-out false positives | 3 | 3 |
+| Recall (all 75) | 0.444 | **0.722** |
+| Accuracy (all 75) | 0.667 | **0.773** |
+| False positives (all 75) | 5 | **4** |
 | `isp_telco` precision | 1.000 | 1.000 |
 
 **Recall decided it, not precision.** The held-out precision gain of 0.060 is
 less than one row and sits inside the 4.5% run-to-run noise measured in
-`KNOWN_LIMITATIONS.md`. Recall moving 0.444 → 0.722 is five more real companies
-out of eighteen, with *fewer* false positives. Judging on precision alone would
-have called this a tie and shipped the worse configuration.
+`KNOWN_LIMITATIONS.md`. Held-out recall moves 0.500 → 0.667 — two more real
+companies out of twelve — with the same number of false positives, 3 each.
+Judging on precision alone would have called this a tie and shipped the worse
+configuration.
+
+The all-75 figures are larger, 0.444 → 0.722 and five more companies, but that
+set includes the 25 entities v4 was tuned against. v4 · Sonnet is first on both
+held-out precision and held-out recall, and no other configuration leads
+either — by about two rows each, which is a real margin and not a wide one.
 
 **Consequence.** 1,005 confirmed organisations against 972 under v3 — 33 more
 companies reaching the market — and tier A grows from 779 to 818.
