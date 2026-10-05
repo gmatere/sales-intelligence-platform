@@ -12,18 +12,20 @@ description: >
   prospect list, whenever someone asks whether the classifier is any good, or
   whenever a decision needs making about which model or prompt version to run —
   those questions all have measured answers here rather than guesses.
-version: 1.1.0
-prompt: prompts/v3/entity_classification.md
+version: 2.0.0
+prompt: prompts/v4/entity_classification.md
 model: claude-sonnet-5
 measured:
   eval_set: evals/labelled_set.jsonl (75 hand-labelled entities, two batches)
-  precision_end_customer_company: 0.615
-  precision_held_out_batch: 0.667
-  recall_end_customer_company: 0.444
-  accuracy: 0.667
+  precision_end_customer_company: 0.765
+  precision_held_out_batch: 0.727
+  recall_end_customer_company: 0.722
+  recall_held_out_batch: 0.667
+  accuracy: 0.773
+  noise_floor: 0.045 class disagreement across two identical runs of 3,000
   results: evals/RESULTS.md
 cost:
-  per_call_usd: 0.00378
+  per_call_usd: 0.00368
   ceiling_usd_per_refresh: 150
 ---
 
@@ -65,23 +67,25 @@ caching will engage for the chosen model, which is worth knowing because it
 fails silently when it doesn't.
 
 ```bash
-python llm/classify.py --dry-run --prompt-version v3
+python llm/classify.py --dry-run --prompt-version v4
 ```
 
 **Classify.** The queue is ordered by ICP fit, so a partial budget still covers
 the entities most likely to be real companies.
 
 ```bash
-python llm/classify.py --limit 3000 --prompt-version v3
+python llm/classify.py --limit 3000 --prompt-version v4
 ```
 
-Results are keyed on (entity, prompt version). A killed run resumes; a prompt
-change re-adjudicates rather than skipping.
+Results are keyed on (entity, prompt version, **model**) — the configuration is
+the pair, not either half. A killed run resumes; changing either the prompt or
+the model re-adjudicates rather than skipping. Keying on the version alone makes
+a model swap unrunnable against entities the previous model already saw.
 
 **Verify before trusting the output.**
 
 ```bash
-python evals/run_eval.py --prompt-version v3 --model claude-haiku-4-5
+python evals/run_eval.py --prompt-version v4 --model claude-sonnet-5
 ```
 
 Reports per-class precision and recall against the previously stored result, and
@@ -222,17 +226,19 @@ support of 18 overall and 12 held out. At 25 it produced a ranking that
 inverted completely on more data. The current ordering is better supported, not
 settled — two rows still separate first from third.
 
-**A known prompt fix is deliberately unapplied.** `ax5z.com` carries
-`myra security` in its org list and every configuration missed it. An
-instruction to scan that field for vendor names would likely fix it, but
-applying it and re-reporting the same eval would invalidate the measurement.
-It belongs in v4, against a set built afterwards.
+**A known prompt fix was deliberately deferred, then applied and measured.**
+`ax5z.com` carries `myra security` in its org list and every configuration
+missed it. The instruction to scan that field for vendor names was *not* applied
+at the time, because changing a prompt after seeing an eval and then reporting
+that eval turns a measurement into a fiction. It shipped in v4 and was scored
+against a batch built after the change, with batch 1 and batch 2 reported
+separately.
 
 ## Dependent files
 
 | Path | Role |
 |---|---|
-| `prompts/v3/entity_classification.md` | the prompt; v1 and v2 retained for comparison |
+| `prompts/v4/entity_classification.md` | the prompt; v1-v3 retained for comparison |
 | `llm/classify.py` | runner — retries, concurrency, resume, dry-run estimator |
 | `llm/tracing.py` | trace schema, pricing, per-model cache thresholds |
 | `llm/probe_cache_floor.py` | empirical cache-threshold finder |
