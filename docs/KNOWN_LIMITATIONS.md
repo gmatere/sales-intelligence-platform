@@ -328,6 +328,34 @@ Recorded as a gap rather than a trade-off, because `ARCHITECTURE.md` asserted
 production would run the queue on a batch endpoint while the implementation
 could not. A design that exists only in the prose is not a design.
 
+**[gap] The cost ceiling is enforced before a run, not during one.**
+`--dry-run` prices the work before a single call, which is what makes a token
+budget a decision rather than a discovery. Nothing checks spend while a run is
+in flight: `run()` submits every future up front, writes results as they land,
+and never sums `cost_usd` against a limit. There are no WARN/CRITICAL/HALT
+tiers, and the degradation path D15 documents — fall back to rules-only
+tiering, queue the remainder, alert — has no trigger wired to it.
+
+The one run that needed halting was stopped by the provider's credit limit
+rather than by the pipeline. It worked, but only by accident: the resume key
+happened to make a hard stop recoverable. Entities that never ran are absent
+from `entity_classifications.jsonl`, so `already_done()` omits them and a
+restart continues exactly where it stopped — which is the property that makes a
+halt safe to add, and the reason this is a small change rather than a redesign.
+
+**The sharper version is that the ceiling is the wrong thing to watch.** Cost
+per call is not constant: a cache miss is 2.5x a hit on Haiku ($0.00518 against
+$0.00205). A guard sized on the dry-run average therefore under-reacts exactly
+when caching fails silently, because the failure doubles the burn rate without
+raising an error. The useful alarm is on **cost per call drifting above the
+estimate**, not on the total — which would have caught the cache-floor bug
+around call 100 instead of after four wrong diagnoses. The cost signal is also
+the health signal, and the most expensive failure here was one where nothing
+errored and only the spend rate changed.
+
+At 10x this stops being optional: ~$1,600 a refresh is not a number anyone
+eyeballs. The scaling analysis is on the Scaling page of `docs/index.html`.
+
 **[gap] Only part of the queue is classified.**
 43,577 entities qualify; the budget covers 3,000. The queue is ordered by fit so
 a partial run covers the entities most likely to be real companies, but

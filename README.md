@@ -149,6 +149,56 @@ measured so far", not "best".
 Full analysis, both reversals, and what still does not hold in
 [`evals/RESULTS.md`](evals/RESULTS.md).
 
+## Scaling to 10×
+
+89 million records, ~740 GB decompressed. Two layers hold, two need
+restructuring, one changes character entirely — and the real bottleneck is
+accuracy, not compute.
+
+**Ingest — the design holds, the parallelism doesn't.** Memory is already flat,
+but a single-threaded parse turns 40 minutes into ~7 hours. Have the producer
+write many smaller zstd files and run one worker per file; embarrassingly
+parallel. The filesystem-glob resume state then needs a manifest with per-shard
+row counts.
+
+**Storage and compute — DuckDB stops being the right tool.** Single-node, and
+~150–200 GB of Parquet will not aggregate comfortably in memory. Same dbt
+models, different engine: Snowflake or Spark with dbt on top. Putting the
+business logic in dbt is what makes that migration cheap — swapping the adapter
+changes the warehouse, not the logic. Partition by country and scan date, and
+make the entity and signal models incremental on `scanned_at`.
+
+**Entity resolution — the real bottleneck, and it is about accuracy.** The
+compute scales fine; the problem does not. 26% with no resolvable domain
+becomes ~650,000 unattributed hosts, wrong anchors multiply in absolute terms,
+and cross-TLD fragmentation grows. At this size I would stop treating it as
+string manipulation: ASN-to-organisation reference data to attribute domainless
+hosts, plus blocking-and-similarity matching to merge a company across TLDs.
+That is where the engineering budget should go.
+
+**LLM layer — the economics change, the architecture mostly holds.** 43,577
+queued becomes ~435,000: ~$1,600 on-demand, ~$800 batched, so batching stops
+being optional. Add two-tier routing — Haiku for clear cases, Sonnet for
+ambiguous ones — *measured*, not assumed, since this project is a case study in
+rankings inverting on more data. Use the 1-hour cache TTL, because batch
+scheduling can outlast the 5-minute default.
+
+**Serving — changes character completely.** A 350 KB Parquet in git is right for
+a demo and absurd at ~1 million prospect rows. This becomes a served query layer
+— Postgres, or DuckDB over object storage behind an API, paginating server-side.
+And the app needs authentication, which it does not have today.
+
+**What gets worse faster than linearly:** the eval set, since a fixed 75 covers
+proportionally less of a more diverse population and needs stratified sampling;
+prompt drift, which argues for the eval running in CI against a held-out set;
+the ~70 hand-curated seed patterns, which should be derived from ASN ownership
+data rather than string matching; and cost monitoring, which at $161 a refresh
+you can eyeball and at $1,600 you cannot — see the budget-guard gap in
+[`docs/KNOWN_LIMITATIONS.md`](docs/KNOWN_LIMITATIONS.md).
+
+Laid out layer by layer on the Scaling page of
+[`docs/index.html`](docs/index.html).
+
 ## Running it
 
 **The app**, against the committed Parquet:
