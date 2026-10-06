@@ -285,7 +285,7 @@
 
   <div class="metrics">
     <div class="met"><b>8.9M</b><span>Source records</span></div>
-    <div class="met"><b>252,078</b><span>Entities resolved</span></div>
+    <div class="met"><b>252,078</b><span>Distinct entities</span></div>
     <div class="met"><b>1,005</b><span>Confirmed organisations</span></div>
     <div class="met"><b>0.765</b><span>Precision, is-a-company</span></div>
     <div class="met"><b>48</b><span>dbt tests</span></div>
@@ -405,12 +405,6 @@ Amazon.com, Inc.     287,584</pre>
   normally — because <b>entity resolution keys on hostnames, not addresses</b>. A host named
   <code>mail.acme.com</code> resolves to <code>acme.com</code> whether or not its address was
   captured.</p>
-  <div class="note good"><b>So a fifth re-ingest was declined.</b> The only residual effect was
-  that <code>count(distinct ip)</code> undercounted estate size for 3,570 entities, which feeds the
-  ICP size band — patched by falling back to hostnames in the distinct count. And there is no
-  display cost, because the export drops every IP address by design. Forty minutes of wall clock,
-  for a field nothing downstream depended on, against a fixed deadline. Recorded as D17.</div>
-
   <div class="note warn"><b>Found by a test that was itself wrong — and the obvious fix would not
   have worked.</b> A <code>not_null</code> test on <code>ip</code> failed with 106,419 rows. The
   tempting principled response is to capture the missing field and re-ingest. But <code>ip</code>
