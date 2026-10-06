@@ -182,8 +182,42 @@ higher, because it does not have enough hosts to be mostly numbered, and an ISP
 cannot score lower, because every one of its hosts was created by script. Two
 naming practices, two clusters, an empty band between them.
 
-**Cost of the change.** 355 entities returned to `unresolved`, of which 261
-carry signals and join the model queue — 261 calls at $0.00368, about $1.
+**What the change does.** 355 entities scored between 0.6 and 0.79, so moving
+the cut-off changes which branch they take:
+
+```
+                    sequential_name_ratio 0.62
+                              |
+        .---------------------+---------------------.
+        |                                           |
+   cut-off 0.6                                  cut-off 0.8
+   rule_class = likely_infrastructure           rule_class = unresolved
+        |                                           |
+   dropped from the funnel                   does it have a finding?
+   never classified                            /              \
+   never a prospect                       261 yes            94 no
+                                        -> model queue   -> not classified
+```
+
+**`unresolved` is an abstention, not a queue.** It records that the rules
+declined to decide, and a second filter in `llm_classification_queue` decides
+whether the model ever sees the entity: `n_signal_categories >= 1`. The 94
+entities with no security finding are dropped there for a different reason
+entirely — an entity with nothing to sell is not a prospect whether or not it
+is a real company, so classifying it is worthless. That filter is both the
+larger and the cheaper of the two, being a boolean on an aggregate rather than
+a model call.
+
+**Nothing is being double-checked.** The rule was not making a judgement that
+the model then verifies; at 0.62 it was refusing to make a judgement at all.
+Rules can prove an entity *is* infrastructure and cannot prove it is not, so
+the honest output in the middle of the range is "I don't know", and that routes
+to the model.
+
+**Cost of the change.** 261 calls at $0.00368, about **$1** — the cost of the
+decision at full queue depth, not a line item on the $34.46 actually spent.
+Only 3,000 of 43,577 queued entities were classified, ordered by `fit_score`,
+so the real spend was however many of the 261 ranked inside that cut.
 
 **Consequence.** An excluded company is never reviewed and never recovers; an
 extra classification costs a fraction of a cent. The asymmetry sets the
