@@ -58,6 +58,18 @@ class Brief(NamedTuple):
 
 DATA = Path(__file__).parent / "data" / "accounts.parquet"
 
+# The quadrant tiers, and the thresholds the exported artifact was built with.
+# Anything outside this tuple is decided before fit and urgency are consulted.
+QUADRANT = ("A - call now", "B - nurture", "C - opportunistic", "D - deprioritise")
+SHIPPED_FIT = SHIPPED_INTENT = 50
+
+# Opening position. Urgency 60 rather than the shipped 50 because at 50 tier A
+# holds 818 of 968 and the label stops discriminating; 60 splits 438/530. Fit 40
+# rather than 50 to make the point that this axis is inert either way — no
+# classified account scores below 65, so the fit dial does nothing until it does
+# everything.
+DEFAULT_FIT, DEFAULT_INTENT = 40, 60
+
 TIER_HELP = {
     "A - call now": "Strong ICP fit and an urgent, current finding.",
     "B - nurture": "Good fit, nothing urgent. Sequence, don't call.",
@@ -409,6 +421,22 @@ def crm_columns(frame: pd.DataFrame) -> pd.DataFrame:
     return frame[present].rename(columns=cols)
 
 
+def retier(frame: pd.DataFrame, fit_min: int, intent_min: int) -> pd.Series:
+    """Recompute the fit/urgency quadrant at the given thresholds.
+
+    Only rows already in a quadrant can move. `U - unclassified`,
+    `X - not a prospect` and `R - needs review` are decided before fit and
+    urgency are ever consulted, so an unclassified or low-confidence account
+    must not become "call now" because a slider moved.
+    """
+    fit_ok, urgent = frame.fit_score >= fit_min, frame.intent_score >= intent_min
+    quad = pd.Series(QUADRANT[3], index=frame.index)
+    quad[fit_ok & ~urgent] = QUADRANT[1]
+    quad[~fit_ok & urgent] = QUADRANT[2]
+    quad[fit_ok & urgent] = QUADRANT[0]
+    return frame.tier.where(~frame.tier.isin(QUADRANT), quad)
+
+
 def trace_drawer(row) -> None:
     """Per-account AI telemetry, from the trace of the call that ran.
 
@@ -471,6 +499,19 @@ df = load(data_fingerprint())
 st.sidebar.title("Filters")
 st.sidebar.caption("Territory and segment, the way a rep works a list.")
 
+# The quadrant cut-offs were hardcoded at 50/50 in the export. They are a
+# judgement, not a measurement, so they belong on a dial the reader can move.
+with st.sidebar.expander("Tier thresholds", expanded=False):
+    st.caption(
+        f"The artifact was exported at {SHIPPED_FIT}/{SHIPPED_INTENT}. Moving "
+        "these re-tiers the whole app. `R`, `X` and `U` are decided before fit "
+        "and urgency are consulted and never move.")
+    fit_min = st.slider("Fit at least", 0, 100, DEFAULT_FIT, 1)
+    intent_min = st.slider("Urgency at least", 0, 100, DEFAULT_INTENT, 1)
+
+shipped_tier = df.tier.copy()
+df = df.assign(tier=retier(df, fit_min, intent_min))
+
 tiers = sorted(t for t in df.tier.unique() if not t.startswith(("X", "U")))
 tier_sel = st.sidebar.multiselect("Tier", tiers,
                                   default=[t for t in tiers if t.startswith("A")] or tiers)
@@ -525,6 +566,51 @@ c3.metric("Whitespace", f"{view.no_waf_anywhere.sum():,}",
           help="No perimeter vendor detected anywhere in the estate")
 c4.metric("Actively exploited", f"{(view.max_epss.fillna(0) > 0.10).sum():,}",
           help="Carrying a vulnerability with EPSS above 10%")
+
+eligible = shipped_tier.isin(QUADRANT)
+moved = df.index[eligible & (df.tier != shipped_tier)]
+
+if (fit_min, intent_min) != (SHIPPED_FIT, SHIPPED_INTENT):
+    st.caption(
+        f"Tiered at fit ≥ {fit_min}, urgency ≥ {intent_min}. "
+        f"The exported artifact used {SHIPPED_FIT}/{SHIPPED_INTENT} — "
+        f"**{len(moved):,} of {int(eligible.sum()):,}** accounts sit in a "
+        "different tier here than in the shipped file.")
+
+with st.expander(f"Threshold sensitivity — {len(moved):,} accounts moved", expanded=False):
+    counts = pd.DataFrame({
+        f"Shipped {SHIPPED_FIT}/{SHIPPED_INTENT}": shipped_tier.value_counts(),
+        f"Now {fit_min}/{intent_min}": df.tier.value_counts(),
+    }).fillna(0).astype(int).sort_index()
+    counts["Change"] = counts.iloc[:, 1] - counts.iloc[:, 0]
+    st.dataframe(counts, use_container_width=True)
+
+    st.caption(
+        "**The fit dial does nothing below 65**, because no classified account "
+        "scores lower — the queue was ordered by fit and only the top 3,000 "
+        "classified, so the population is fit-truncated by construction. 716 of "
+        "968 sit at exactly 65: size band 25 + whitespace 25 + products 10 + no "
+        "`security.txt` 5. Cross 65 and all 716 move at once. **A versus B is "
+        "decided by urgency alone**, which is the finding this control exists to "
+        "surface.")
+
+    if len(moved):
+        shifts = pd.DataFrame({
+            "Company": df.loc[moved, "company"],
+            "Domain": df.loc[moved, "entity_domain"],
+            "Fit": df.loc[moved, "fit_score"],
+            "Urgency": df.loc[moved, "intent_score"],
+            "Shipped": shipped_tier.loc[moved],
+            "Now": df.loc[moved, "tier"],
+        }).sort_values(["Shipped", "Now", "Urgency"], ascending=[True, True, False])
+        st.dataframe(shifts, use_container_width=True, hide_index=True, height=300)
+        st.download_button(
+            "⬇  Export the movers to CSV",
+            shifts.to_csv(index=False).encode("utf-8"),
+            file_name=f"tier-movers-fit{fit_min}-urgency{intent_min}.csv",
+            mime="text/csv")
+    else:
+        st.info("No account changes tier at these thresholds.")
 
 if view.empty:
     st.info("No accounts match these filters.")

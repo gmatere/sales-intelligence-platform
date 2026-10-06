@@ -275,6 +275,9 @@ is a couple of rows.
 
 **Tier A holds 818 accounts, which is not a call list.** The queue is already
 filtered to entities with a finding, so urgency is high for nearly everything
-that survives and the threshold stops discriminating. Documented rather than
-retuned: adjusting a threshold after seeing the distribution, to produce a
-nicer split, is the same error as tuning a prompt after seeing its eval.
+that survives and the threshold stops discriminating. Not retuned in the export
+— adjusting a threshold after seeing the distribution, to produce a nicer split,
+is the same error as tuning a prompt after seeing its eval. Exposed as a slider
+instead: the app re-tiers live and reports what moved against the shipped 50/50
+baseline. Urgency at 60 splits 438/530, and the fit axis turns out to be inert,
+since no classified account scores below 65.

@@ -20,7 +20,7 @@ The eight that change how you should read the output:
 | | Why it matters |
 |---|---|
 | **Every CVE is version-inferred, never tested** | Shodan matches version banners against advisories. `verified` was false on 100% of 7,066 sampled entries. Scoring leads on EPSS instead, and outreach hedges. |
-| **Tier A holds 818 of 1,005 accounts** | 81%. The queue is pre-filtered to entities with a finding, so urgency stops discriminating. Ranking within the tier is still correct; the label carries no information. |
+| **Tier A holds 818 of 1,005 accounts** | 81%. The queue is pre-filtered to entities with a finding, so urgency stops discriminating. Now a slider in the app rather than a hardcoded 50 — urgency at 60 splits 438/530, and the fit axis turns out to be inert. |
 | **The same prompt and model disagree with themselves on 4.5% of entities** | Measured across two identical runs of 3,000. It is the noise floor under every eval number here. |
 | **The eval set is 75 examples, one labeller** | Support of 18 on the headline class, 12 held-out. It has already overturned its own recommendation twice. |
 | **Classification precision is 0.765, recall 0.722 — 0.727 and 0.667 held-out** | Four false positives out of 75 would have reached a rep's call list. Two of the four are probably mislabelled. |
@@ -421,11 +421,26 @@ security signal, so by the time scoring runs, intent is high for almost
 everything that survives. `intent_score >= 50` no longer discriminates.
 
 The app still ranks correctly within the tier, so the list is usable top-down,
-but the tier label has stopped carrying information. The fix is to set the
-threshold from the distribution after filtering, or to make tier a percentile
-rather than an absolute cut. Not applied, because retuning thresholds to produce
-a pleasing distribution after seeing the output is the same error as tuning a
-prompt after seeing its eval.
+but the tier label has stopped carrying information.
+
+**Exposed as a control rather than retuned.** Quietly picking a nicer threshold
+after seeing the output is the same error as tuning a prompt after seeing its
+eval, so the threshold was not changed in the export. Instead the app carries
+fit and urgency sliders that re-tier the whole view live, report how many
+accounts moved against the shipped 50/50 baseline, and list which ones. That
+answers the objection rather than dodging it: the cut-off was always a
+judgement, and a reader can now see what any value does instead of taking 50 on
+trust. The app opens at fit 40 / urgency 60, which splits 438/530. The exported
+artifact is unchanged at 50/50.
+
+**The control surfaced a second defect: the fit axis does nothing.** No
+classified entity scores below 65 on fit, because the queue is ordered by
+`fit_score` and only the top 3,000 were classified — the population is
+fit-truncated by construction. 716 of 968 sit at *exactly* 65: size band 25,
+whitespace 25, products 10, no `security.txt` 5. So the fit dial is inert from 0
+to 65 and then moves 716 accounts at once, and **A versus B is decided by
+urgency alone.** The 2x2 is a 1x2 in practice. Fixing it needs a queue that is
+not pre-sorted on one of the two axes being thresholded.
 
 **[gap] Outreach openers are template-generated, not model-written.**
 The "what to say" text is assembled deterministically from the specific finding.

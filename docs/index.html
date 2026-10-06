@@ -637,6 +637,23 @@ then, and only then:
   reasoning names the evidence, so a wrong call can be attributed to the model or to the input
   rather than guessed at.</p>
 
+  <h3>One account, and all three thousand</h3>
+  <p>The trace above is one call. Totalled across the shipped run only — v4 on Sonnet 5, the
+  configuration that produced the current artifact:</p>
+  <div class="metrics" style="grid-template-columns:repeat(4,1fr)">
+    <div class="met"><b>$11.05</b><span>Shipped run · 3,000 accounts</span></div>
+    <div class="met"><b>$0.00368</b><span>Mean per account</span></div>
+    <div class="met"><b>94.2%</b><span>Input tokens from cache</span></div>
+    <div class="met"><b>$1,105</b><span>300,000 accounts at this rate</span></div>
+  </div>
+  <p><b>Every call hit the cache</b> — 3,000 of 3,000, no retries. But the useful figure is 94.2%,
+  the share of <i>input tokens</i> read from cache rather than billed fresh. The missing 5.8% is
+  the per-account JSON, which differs on every call and so can never be cached. That is a
+  structural ceiling, not a tuning target.</p>
+  <p>At 300,000 accounts the same work is <b>$1,105 on-demand, or about $553 batched</b> — the
+  point where a budget guard stops being optional. Full economics on the
+  <span data-go="cost">Cost Model</span> page.</p>
+
   <h3>The four prompt versions</h3>
   <p>The prompt is the instruction sheet sent with every call. It is identical for all 3,000 —
   only the entity's data changes. Every version is kept, and every verdict records which one
@@ -996,7 +1013,8 @@ evals, 5 configurations     75 labels each                     $1.84
         instead, and outreach hedges accordingly.</td></tr>
     <tr><td><b>Tier A holds 818 of 1,005 accounts</b></td>
         <td>81%. The queue is pre-filtered to entities with a finding, so urgency stops
-        discriminating. Ranking within the tier is still correct; the label carries no information.</td></tr>
+        discriminating. Now a slider in the app rather than a hardcoded 50 — urgency at 60 splits
+        438/530, and the fit axis turns out to be inert: no classified account scores below 65.</td></tr>
     <tr><td><b>The model disagrees with itself on 4.5% of entities</b></td>
         <td>Measured across two identical runs of 3,000. It is the noise floor under every eval
         number here.</td></tr>
