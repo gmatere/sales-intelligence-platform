@@ -80,11 +80,12 @@ select
         -- address (dsl-123-45.isp.net) produces near-total sequential naming.
         --
         -- Threshold raised 0.6 -> 0.8 after sampling. Unambiguous ISPs sit at
-        -- 0.87-1.0; the only two false positives in a 25-row sample were the
-        -- Italian foreign ministry (esteri.it) and a Belgian aviation firm,
-        -- both at exactly 0.64. A false exclusion is far more costly than an
-        -- extra model call — an excluded company never gets a second look,
-        -- whereas an extra classification costs a fraction of a cent.
+        -- 0.79-1.00; two samples of 25 excluded entities turned up one false
+        -- positive each, both government bodies — the Italian foreign ministry
+        -- (esteri.it) at 0.64 and a Polish municipality (hajnowka.pl) at 0.62.
+        -- A false exclusion is far more costly than an extra model call — an
+        -- excluded company never gets a second look, whereas an extra
+        -- classification costs a fraction of a cent. See D6.
         when a.sequential_name_ratio >= 0.8 and a.n_hosts >= 10
             then 'likely_infrastructure'
 

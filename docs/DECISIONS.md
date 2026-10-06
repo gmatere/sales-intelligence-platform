@@ -156,7 +156,7 @@ reasoning about the design.
 0.8 after sampling.
 
 **Why.** Two random samples of 25 excluded entities each contained one false
-positive, both government bodies, both at the same score:
+positive, both government bodies, both scoring just above the old threshold:
 
 ```
 esteri.it     0.64   Italian Ministry of Foreign Affairs
@@ -168,7 +168,7 @@ than coincidental: municipal and ministry estates are small and hand-named,
 while ISP customer-premises equipment is machine-named throughout.
 
 **Cost of the change.** 355 entities returned to `unresolved`, of which 261
-carry signals and join the model queue — a few cents.
+carry signals and join the model queue — 261 calls at $0.00368, about $1.
 
 **Consequence.** An excluded company is never reviewed and never recovers; an
 extra classification costs a fraction of a cent. The asymmetry sets the
