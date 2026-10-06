@@ -155,41 +155,31 @@ reasoning about the design.
 **Decision.** The rule that spots auto-generated machine names had its cut-off
 raised from 0.6 to 0.8 after sampling.
 
-**Why.** The rule scores each entity on the fraction of its hostnames that look
-numbered, on the reasoning that a hosting provider names machines by script
-(`host-12-34-56.isp.net`) where a company names them by hand (`www`, `mail`).
-Score 0.6 or above and the entity was dropped from the funnel.
-
-Two random samples of 25 excluded entities each contained one false positive,
-both government bodies, both scoring just above that cut-off:
+**Why.** The rule scores the fraction of an entity's hostnames that look
+numbered — a provider names machines by script (`host-12-34-56.isp.net`), a
+company by hand (`www`, `mail`). Score 0.6 or above and the entity was dropped
+from the funnel. Two random samples of 25 excluded entities each turned up one
+government body:
 
 ```
 esteri.it     0.64   Italian Ministry of Foreign Affairs
 hajnowka.pl   0.62   Polish municipality
 ```
 
-**The signal conflates two different reasons for a number.** A council has a
-handful of hand-named hosts plus the standard numbered ones — `ns1`, `ns2`,
-`mx1` — because that is simply how a nameserver and a mail exchanger are named.
-Eight of `hajnowka.pl`'s thirteen hosts carry a number, which is 0.62 — a
-score driven by naming convention rather than by anything resembling a machine
-farm.
+**The signal conflates two reasons for a number.** `ns1`, `ns2` and `mx1` are
+simply how a nameserver and a mail exchanger are named; eight of
+`hajnowka.pl`'s thirteen hosts carry a number for that reason alone. Every
+unambiguous ISP sat at 0.79–1.00 and nothing landed between 0.65 and 0.78 — a
+council cannot score higher without more hosts, an ISP cannot score lower
+because every host was scripted. Two naming practices, two clusters, so 0.8 is
+not fitted to a lucky sample.
 
-Every unambiguous ISP sat at 0.79–1.00, and **nothing landed between 0.65 and
-0.78.** The separation is explicable rather than coincidental, and it is why a
-cut-off of 0.8 is not fitted to a lucky sample: a council cannot score much
-higher, because it does not have enough hosts to be mostly numbered, and an ISP
-cannot score lower, because every one of its hosts was created by script. Two
-naming practices, two clusters, an empty band between them.
-
-**What the change does.** 355 entities scored between 0.6 and 0.79, so moving
-the cut-off changes which branch they take:
+**What moves.** 355 entities sat in that band:
 
 ```
                     sequential_name_ratio 0.62
                               |
         .---------------------+---------------------.
-        |                                           |
    cut-off 0.6                                  cut-off 0.8
    rule_class = likely_infrastructure           rule_class = unresolved
         |                                           |
@@ -199,25 +189,12 @@ the cut-off changes which branch they take:
                                         -> model queue   -> not classified
 ```
 
-**`unresolved` is an abstention, not a queue.** It records that the rules
-declined to decide, and a second filter in `llm_classification_queue` decides
-whether the model ever sees the entity: `n_signal_categories >= 1`. The 94
-entities with no security finding are dropped there for a different reason
-entirely — an entity with nothing to sell is not a prospect whether or not it
-is a real company, so classifying it is worthless. That filter is both the
-larger and the cheaper of the two, being a boolean on an aggregate rather than
-a model call.
+`unresolved` is an abstention, not a queue: a second filter
+(`n_signal_categories >= 1`) sends only entities with a finding to the model.
+The other 94 go nowhere — no finding means no prospect, company or not.
 
-**Nothing is being double-checked.** The rule was not making a judgement that
-the model then verifies; at 0.62 it was refusing to make a judgement at all.
-Rules can prove an entity *is* infrastructure and cannot prove it is not, so
-the honest output in the middle of the range is "I don't know", and that routes
-to the model.
-
-**Cost of the change.** 261 calls at $0.00368, about **$1** — the cost of the
-decision at full queue depth, not a line item on the $34.46 actually spent.
-Only 3,000 of 43,577 queued entities were classified, ordered by `fit_score`,
-so the real spend was however many of the 261 ranked inside that cut.
+**Cost.** 261 calls at $0.00368, about **$1** — at full queue depth, not part
+of the $34.46 actually spent.
 
 **Consequence.** An excluded company is never reviewed and never recovers; an
 extra classification costs a fraction of a cent. The asymmetry sets the
