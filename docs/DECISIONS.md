@@ -152,20 +152,35 @@ reasoning about the design.
 
 ## D6 — Prefer an extra model call over a silent exclusion
 
-**Decision.** The sequential-hostname heuristic threshold was raised from 0.6 to
-0.8 after sampling.
+**Decision.** The rule that spots auto-generated machine names had its cut-off
+raised from 0.6 to 0.8 after sampling.
 
-**Why.** Two random samples of 25 excluded entities each contained one false
-positive, both government bodies, both scoring just above the old threshold:
+**Why.** The rule scores each entity on the fraction of its hostnames that look
+numbered, on the reasoning that a hosting provider names machines by script
+(`host-12-34-56.isp.net`) where a company names them by hand (`www`, `mail`).
+Score 0.6 or above and the entity was dropped from the funnel.
+
+Two random samples of 25 excluded entities each contained one false positive,
+both government bodies, both scoring just above that cut-off:
 
 ```
 esteri.it     0.64   Italian Ministry of Foreign Affairs
 hajnowka.pl   0.62   Polish municipality
 ```
 
-Every unambiguous ISP sat at 0.79–1.00. The separation is explicable rather
-than coincidental: municipal and ministry estates are small and hand-named,
-while ISP customer-premises equipment is machine-named throughout.
+**The signal conflates two different reasons for a number.** A council has a
+handful of hand-named hosts plus the standard numbered ones — `ns1`, `ns2`,
+`mx1` — because that is simply how a nameserver and a mail exchanger are named.
+Eight of `hajnowka.pl`'s thirteen hosts carry a number, which is 0.62 — a
+score driven by naming convention rather than by anything resembling a machine
+farm.
+
+Every unambiguous ISP sat at 0.79–1.00, and **nothing landed between 0.65 and
+0.78.** The separation is explicable rather than coincidental, and it is why a
+cut-off of 0.8 is not fitted to a lucky sample: a council cannot score much
+higher, because it does not have enough hosts to be mostly numbered, and an ISP
+cannot score lower, because every one of its hosts was created by script. Two
+naming practices, two clusters, an empty band between them.
 
 **Cost of the change.** 355 entities returned to `unresolved`, of which 261
 carry signals and join the model queue — 261 calls at $0.00368, about $1.
