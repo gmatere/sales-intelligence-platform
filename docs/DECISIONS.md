@@ -664,26 +664,22 @@ companies out of twelve — with the same number of false positives, 3 each.
 Judging on precision alone would have called this a tie and shipped the worse
 configuration.
 
-The all-75 figures are larger, 0.444 → 0.722 and five more companies, but that
-set includes the 25 entities v4 was tuned against. v4 · Sonnet is first on both
-held-out precision and held-out recall, and no other configuration leads
-either — by about two rows each, which is a real margin and not a wide one.
+The all-75 figures are larger — 0.444 → 0.722, five more companies — but that
+set includes the 25 entities v4 was tuned against. v4 · Sonnet leads both
+held-out columns and nothing else leads either, by about two rows each: a real
+margin, not a wide one.
 
 **Consequence.** 1,005 confirmed organisations against 972 under v3 — 33 more
 companies reaching the market — and tier A grows from 779 to 818.
 
 **The prompt file said otherwise for a while.** v4's frontmatter declared
-`model: claude-haiku-4-5`, which was correct when written — v4 existed to clear
-Haiku's cache floor. Production overrode it with `--model claude-sonnet-5` and
-the file was never updated, so `classify.py --prompt-version v4` without the
-flag silently selected the configuration measuring 0.467 held-out precision
-instead of 0.727.
-
-Nothing downstream was affected: every trace and verdict records the model
-actually used rather than the declared one, and the export filters on the
-`(prompt_version, model)` pair. But a default that contradicts the shipped
-configuration is a trap for whoever runs it next. The frontmatter now reads
-`claude-sonnet-5`. v4 is no longer the Haiku prompt; it is the shipped prompt.
+`model: claude-haiku-4-5` — correct when written, since v4 existed to clear
+Haiku's floor. Production overrode it with `--model`, so running
+`--prompt-version v4` without the flag silently selected the 0.467
+configuration instead of 0.727. Nothing downstream was affected, because traces
+and verdicts record the model actually used, but a default contradicting the
+shipped configuration is a trap for whoever runs it next. The frontmatter now
+reads `claude-sonnet-5`.
 
 **What this says about the process.** The same mistake appeared in three
 places — the classifier's resume key, the trace analysis and the export filter
@@ -723,34 +719,25 @@ because entity resolution keys on hostnames rather than addresses — a host nam
 **Consequence.** One residual effect: `count(distinct ip)` understates the
 estate for those 3,570 entities, which feeds the ICP size band and therefore
 `fit_score`. Mitigated by falling back to the first hostname in the distinct
-count, so the undercount is corrected rather than carried.
+count. No effect on the serving artifact — `export_curated.py` drops every IP
+address by design.
 
-No effect on the serving artifact: `export_curated.py` drops every IP address by
-design, so there is no display cost to recover.
+**The test was wrong, not the data.** A `not_null` test on `ip` failed with
+106,419 rows, and the re-ingest would not have fixed it: `ip` is populated from
+`ip_str` alone, so adding an `ipv6` column leaves it null for exactly the same
+rows. Making the test pass would have meant coalescing both into one address
+column — which is an admission that the assertion was wrong. And it was.
+`not_null(ip)` claims every exposed service has an IPv4 address, which is false
+about **the internet**, not about this pipeline.
 
-**Found by a test that was itself wrong.** A `not_null` test on `ip` failed with
-106,419 rows. Three responses were available: silence the assertion, capture
-`ipv6` and re-ingest, or ask whether the assertion was true.
+Replaced with `assert_hosts_are_identifiable`: every host must have an address
+*or* a name, or it can be neither attributed nor shown to a rep. Its
+warn/error thresholds encode the measured baseline as a canary for the source
+changing shape.
 
-**The re-ingest would not have fixed it.** `ip` is populated from `ip_str`
-alone, so adding an `ipv6` column leaves `ip` null for exactly the same 106,419
-rows and the test fails identically. Making it pass would have required
-coalescing both into one address column — redefining what the column means,
-which is itself an admission that the original assertion was wrong.
-
-And it was. `not_null(ip)` asserts that every exposed service has an IPv4
-address. That is false about **the internet**, not about this pipeline. Shodan
-makes no such guarantee, and nothing we control could make it true.
-
-Replaced with `assert_hosts_are_identifiable`, which tests the weaker claim that
-actually matters: every host must have an address *or* a name, or it can be
-neither attributed nor shown to a rep. Its warn/error thresholds encode the
-measured baseline as a canary for the source changing shape.
-
-**The transferable part.** When a test fails, the first question is whether the
-assertion is true — not how to satisfy it. Here the tempting principled move
-(re-ingest the missing field) was 40 minutes of work that would have left the
-failure in place, because it treated a false assertion as a data defect.
+**Generalisable:** when a test fails, ask whether the assertion is true before
+asking how to satisfy it. The principled-looking move here was 40 minutes of
+re-ingest that would have left the failure in place.
 
 ---
 
